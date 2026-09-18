@@ -1,6 +1,10 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
 description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
+metadata:
+  version: "1.1.0"
+  aws-services: "Amazon Connect"
+  technical-domains: "Contact Center, Telephony, GenAI"
 ---
 
 # Amazon Connect Operations Review & Troubleshooting Guide
