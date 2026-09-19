@@ -1,6 +1,10 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
 description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
+metadata:
+  version: "1.2.0"
+  aws-services: "Amazon Connect"
+  technical-domains: "Contact Center, Telephony, GenAI"
 ---
 
 # Amazon Connect Operations Review & Troubleshooting Guide
@@ -69,16 +73,9 @@ aws connect list-integration-associations --instance-id <instance-id> --region <
 aws connect list-tags-for-resource --resource-arn <instance-arn> --region <region>
 ```
 
-Classify each discovered instance. **This classification is a heuristic signal based only on tags, alias, and integrations found — not an authoritative production/dev-test determination.** An instance with no tags or an ambiguous alias must be treated as unconfirmed/production-risk, not automatically "safe":
+Classify each discovered instance using the classification criteria in `references/connect-ops-review-orchestrator.md` — that file is the **canonical source** for discovery, classification, and pillar routing; do not restate its criteria table here (keeping a single copy avoids drift).
 
-| Classification | Criteria |
-|---|---|
-| Production | Has integrations OR tags contain "prod" OR has Wisdom/Q-in-Connect integrations |
-| Dev/Test | Tags or alias contain dev/test/staging/sandbox |
-| Abandoned | Created >1 year ago, 0 integrations, no prod tags |
-| AI-Focused | Has WISDOM_ASSISTANT or Q_IN_CONNECT integration |
-| Campaign | Has CONNECT_CAMPAIGNS integration |
-| DR Replica | Has a Traffic Distribution Group association, or alias contains replica/dr/bak |
+**Classification is a heuristic signal based only on tags, alias, and integrations found — not an authoritative production/dev-test determination.** An instance with no tags or an ambiguous alias MUST be treated as unconfirmed/production-risk, not automatically "safe".
 
 Collect shared data once (flows, queues, users, routing profiles, phone numbers) — see `references/connect-ops-review-orchestrator.md` for the full discovery and shared-data-collection procedure and pillar-routing rules.
 

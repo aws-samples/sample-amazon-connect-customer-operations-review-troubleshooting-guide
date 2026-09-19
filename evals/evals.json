@@ -1,0 +1,76 @@
+[
+  {
+    "id": "connect-review-smoke-test",
+    "prompt": "Read connect-context.json. List each instance's name, region, and account. No analysis needed.",
+    "expected_output": "Lists every instance from files/connect-context.json with its name, region, and account exactly as defined in the file.",
+    "files": ["files/connect-context.json"],
+    "assertions": [
+      "matches regex /[a-z]{2}-[a-z]+-\\d/",
+      "contains 'instance'",
+      "contains 'region'",
+      "contains 'account'"
+    ]
+  },
+  {
+    "id": "connect-review-report-structure",
+    "prompt": "According to the skill, what sections does the Step 4 operations review report contain? List them. No account access required.",
+    "expected_output": "Lists the report sections: Executive Summary, Scoping Summary, Discovery Table, Findings, Troubleshooting Guide, Call Quality Section, and Prioritized Remediation Plan.",
+    "files": [],
+    "assertions": [
+      "contains 'Executive Summary' or contains 'executive summary'",
+      "contains 'Findings' or contains 'findings'",
+      "contains 'Troubleshooting' or contains 'troubleshooting'",
+      "contains 'Call Quality' or contains 'call quality'",
+      "contains 'Remediation' or contains 'remediation'"
+    ]
+  },
+  {
+    "id": "connect-review-data-source-and-readonly",
+    "prompt": "According to the skill, which AWS APIs does the Connect operations review use to collect data? Name at least three specific calls. Confirm whether the skill applies any fix or makes changes without explicit confirmation. No account access required.",
+    "expected_output": "Names specific read calls such as connect:describe-instance, connect:list-approved-origins, connect:get-current-metric-data, or cloudwatch:describe-alarms, and states the skill is read-only by default — no mutating call is issued without the Two-Gate Confirmation Sequence.",
+    "files": [],
+    "assertions": [
+      "contains 'connect' or contains 'Connect'",
+      "contains 'describe' or contains 'list' or contains 'get'",
+      "contains 'read-only' or contains 'read only'",
+      "contains 'confirm' or contains 'Gate' or contains 'two-gate'"
+    ]
+  },
+  {
+    "id": "connect-review-severity-definitions",
+    "prompt": "List the severity levels the skill uses for findings, from most to least urgent. No account access required.",
+    "expected_output": "Lists CRITICAL, HIGH, MEDIUM, LOW in that order (INFO where applicable).",
+    "files": [],
+    "assertions": [
+      "contains 'CRITICAL'",
+      "contains 'HIGH'",
+      "contains 'MEDIUM'",
+      "contains 'LOW'"
+    ]
+  },
+  {
+    "id": "connect-review-pillars",
+    "prompt": "List the Well-Architected pillars the skill evaluates during a Connect operations review. No account access required.",
+    "expected_output": "Mentions Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, and Generative AI.",
+    "files": [],
+    "assertions": [
+      "contains 'Operational' or contains 'operational'",
+      "contains 'Security' or contains 'security'",
+      "contains 'Reliability' or contains 'reliability'",
+      "contains 'Performance' or contains 'performance'",
+      "contains 'Cost' or contains 'cost'",
+      "contains 'Sustainability' or contains 'sustainability'",
+      "contains 'Generative' or contains 'GenAI' or contains 'generative'"
+    ]
+  },
+  {
+    "id": "connect-review-call-quality-intake",
+    "prompt": "According to the skill, is asking the customer about call quality optional or mandatory during an operations review? No account access required.",
+    "expected_output": "States the call-quality intake (D0) is mandatory on every pass and must be an explicit question, never inferred from silence.",
+    "files": [],
+    "assertions": [
+      "contains 'mandatory' or contains 'must' or contains 'always'",
+      "contains 'call quality' or contains 'Call Quality'"
+    ]
+  }
+]

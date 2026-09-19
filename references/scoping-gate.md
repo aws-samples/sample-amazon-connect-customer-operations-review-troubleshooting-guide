@@ -16,21 +16,7 @@ aws sts get-caller-identity
 
 ### 2. Region(s) and Instance Discovery
 
-Once account(s) are known, discover Connect instances. Scan regions in parallel where possible:
-
-```
-us-east-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1,
-ap-southeast-2, ap-northeast-1, ca-central-1, af-south-1,
-ap-northeast-2, eu-west-2, us-gov-west-1
-```
-
-Per region:
-```bash
-aws connect list-instances --region <region> --max-results 10
-# Empty response -> skip region
-# Results -> for each instance:
-aws connect describe-instance --instance-id <instance-id> --region <region>
-```
+Once account(s) are known, discover Connect instances using the region-scanning strategy and per-region discovery calls in `references/connect-ops-review-orchestrator.md` — that file is the **canonical source** for the default and full region sets and the per-region call sequence. Do not maintain a separate region list here (keeping a single copy avoids drift).
 
 Present discovered instances as raw facts — do not label or classify them as Production/Dev/Test at this stage (classification happens in Step 2 of the main workflow, based on evidence, not guesswork):
 

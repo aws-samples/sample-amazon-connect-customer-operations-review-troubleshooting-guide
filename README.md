@@ -105,8 +105,22 @@ Check whether ACGR is still syncing between our primary and DR replica instances
 
 To make this skill available to your AWS DevOps Agent:
 
-1. Package the skill directory (`SKILL.md` plus everything under `references/`) as a
-   `.zip` — keep the folder structure intact, don't flatten it.
+1. Package the skill directory as a `.zip` — keep the folder structure intact, don't
+   flatten it. Include `SKILL.md` (must sit at the archive root) plus everything under
+   `references/`. **Exclude development-only files** — they aren't needed at runtime and
+   only bloat the upload:
+
+   ```bash
+   zip -r amazon-connect-ops-review-troubleshooting-guide.zip . \
+     -x '.git/*' '.gitignore' '.gitallowed' \
+        'CHANGELOG.md' '.skilleval.yaml' 'evals/*' 'CONTRIBUTING.md' 'CODE_OF_CONDUCT.md'
+   ```
+
+   The runtime package is just `SKILL.md` + `references/`. `.skilleval.yaml` and `evals/`
+   are test assets (skill-eval definitions); `CHANGELOG.md` and the git files are
+   repo hygiene. This skill is platform-agnostic — any AI tool with AWS CLI/SDK access can
+   load `SKILL.md` and pull in `references/` on demand; the steps below cover the AWS
+   DevOps Agent specifically.
 2. Open your AWS DevOps Agent space in the console.
 3. Go to the **Skills** section of the space.
 4. Select **Add skill → Upload skill**, and upload the `.zip` package.

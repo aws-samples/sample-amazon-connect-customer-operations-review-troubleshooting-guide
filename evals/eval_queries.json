@@ -1,0 +1,15 @@
+[
+  {"query": "Run an Amazon Connect operations review", "should_trigger": true},
+  {"query": "Do a Well-Architected review of my Amazon Connect instance", "should_trigger": true},
+  {"query": "Review my Amazon Connect security posture — any open findings?", "should_trigger": true},
+  {"query": "Check if ACGR is synced between my primary and DR replica Connect instances", "should_trigger": true},
+  {"query": "How do I fix SEC-001 on my Connect instance?", "should_trigger": true},
+  {"query": "Agents report choppy audio on Connect calls today — help me troubleshoot", "should_trigger": true},
+  {"query": "What should I fix first on my Amazon Connect instance?", "should_trigger": true},
+  {"query": "Discover and classify the Amazon Connect instances in my account", "should_trigger": true},
+  {"query": "Write a Python script that sorts a list of numbers", "should_trigger": false},
+  {"query": "What's the weather forecast for Sydney this weekend?", "should_trigger": false},
+  {"query": "Create a CloudFormation template for an S3 bucket", "should_trigger": false},
+  {"query": "Review my Amazon SageMaker training jobs for best practices", "should_trigger": false},
+  {"query": "How do I set up an Amazon Chime meeting?", "should_trigger": false}
+]

@@ -14,8 +14,11 @@ Discovers Amazon Connect instances, classifies them, and routes to the appropria
 
 ```
 Phase 0: Discovery → Classification → Pillar Routing
-Total budget: 30 seconds
 ```
+
+> The second/minute figures below (e.g. `5 seconds max`, `15 seconds max`) are
+> relative-effort and priority hints, **not deadlines to self-time** — see
+> "Effort Budgeting & Priority Order" in `references/global-rules.md`.
 
 ## Pre-Flight (5 seconds max)
 
@@ -148,9 +151,11 @@ Proceeding to pillar assessments...
 
 Then execute each pillar skill in sequence (or user-selected subset).
 
-## Timeout Handling
+## Cutting Phase 0 Short
 
-- If Phase 0 exceeds 30 seconds:
+If Phase 0 must be cut short (host/tool time limit, user interrupt, or repeated
+throttling — not a self-counted clock; see "Effort Budgeting & Priority Order" in
+`references/global-rules.md`):
   1. Save whatever instances were discovered
   2. Skip remaining regions
   3. Proceed with what's available

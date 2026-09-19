@@ -88,20 +88,24 @@ Applies only after both Gate 1 and Gate 2 of the Two-Gate Confirmation Sequence 
 
 ---
 
-## Standard Timeout Handling
+## Effort Budgeting & Priority Order
 
-```
-At 70 seconds: Stop issuing new API calls.
-At 80 seconds: Produce findings from data collected so far.
-Uncompleted checks: Mark as "NOT_ASSESSED: timeout" in output.
-```
+**Do not attempt to self-time execution against a wall clock — an agent cannot reliably
+measure elapsed seconds mid-run.** The second/minute figures throughout the orchestrator
+and pillar files (e.g. `Budget: 90 seconds`, `(25 seconds max)`, `Total budget: 30 seconds`)
+are **relative-effort and priority hints, not deadlines to self-enforce**: they signal which
+checks are cheap vs. expensive and which to drop first when a run must be shortened. Nothing
+in this skill requires counting elapsed time.
 
-**Priority order if timeout approaching:**
-- MUST RUN: Critical path checks first (safety, security, reliability)
-- HIGH VALUE: Checks with high signal-to-cost ratio
-- DROP IF NEEDED: Low-signal analysis-only checks
+Work the checks in priority order. If the run must be cut short — a host/tool time limit is
+hit, the user interrupts, or throttling repeats despite retry — stop issuing new API calls,
+produce findings from data already collected, and mark uncompleted checks as
+`NOT_ASSESSED: not reached`.
 
-See individual pillar files for specific check priorities.
+**Priority order (applies to every pillar; see each pillar file for its specific list):**
+- MUST RUN: Critical-path checks first — safety, security, reliability
+- HIGH VALUE: Checks with the best signal-to-cost ratio
+- DROP FIRST: Low-signal, analysis-only checks that issue no API calls
 
 ---
 
