@@ -95,7 +95,7 @@ prefix where CCP logs are collected.**
 the incident window and works when the agent already closed the tab. The bucket is
 **customer-owned, not Connect-managed** (no `InstanceStorageResourceType` covers client logs),
 so it is a must-ask and can never be derived. Retrieval, key-layout discovery, parsing, and the
-token/PII handling rules: `call-quality-playbook.md` §5.A.1.
+token/PII handling rules: `call_quality_playbook.md` §5.A.1.
 
 Rules: ask once and specifically (name the gear icon). A refresh already happened → record
 `CCP logs unavailable — session cleared before capture` and name the hypotheses that
@@ -134,7 +134,7 @@ aws service-quotas get-service-quota --service-code connect --quota-code <code> 
 | `volume_band` | CloudWatch `CallsPerInterval` 14d → `low <500/d`, `mid`, `high >10k/d` | all derived thresholds |
 | `agent_count` | `list-users`, enabled only | alarm sizing, TDG |
 | `instance_age_days` | `describe-instance → CreatedTime` | abandoned detection |
-| `flow_logs_enabled` | `describe-instance-attribute CONTACT_FLOW_LOGS` | A1 |
+| `flow_logs_enabled` | `describe-instance-attribute CONTACTFLOW_LOGS` | A1 |
 | `contact_lens_enabled` | `describe-instance-attribute CONTACT_LENS` | H2, cost |
 | `iac_owned` | stack tags + `describe-stack-resources` | every Change Proposal |
 
@@ -346,16 +346,16 @@ Never `verified`.
 | **A** | A1 (`OPS-001`/`OPS-004`) | flow logging gaps, invisible flow errors | `troubleshooting-guide.md` |
 | **B** | B1 (`OPS-002`) | alarm coverage, operational blindness | `troubleshooting-guide.md` |
 | **C** | C1 (`SEC-001`), C2 (`SEC-007`), C3 (`SEC-006`), C4 (IAM) | origins, S3 policy/encryption, KMS CMK, IAM denials | `troubleshooting-guide.md`, `iam-permission-errors.md` |
-| **D** | **D0 (mandatory)**, D1–D4 (`PERF-CQ-001..004`) | call quality intake, agent/WebRTC, telephony/carrier, CCP logs | `call-quality-playbook.md` |
+| **D** | **D0 (mandatory)**, D1–D4 (`PERF-CQ-001..004`) | call quality intake, agent/WebRTC, telephony/carrier, CCP logs | `call_quality_playbook.md` |
 | **E** | E1 (`PERF-002`), E2 (`AI-001`/`AI-007`) | Lex test alias in production, AI guardrails | `troubleshooting-guide.md` |
 | **F** | F1 (`REL-001/002/008`), F2–F6 (`REL-009..013`) | TDG/DR; ACGR sync and recovery | F1: `troubleshooting-guide.md`; F2–F6: `acgr-sync-operations.md` |
 | **G** | G1 (`COST-004`), G2 (`COST-003`) | S3 lifecycle, cost spike investigation | `troubleshooting-guide.md` |
 | **H** | H1 (metrics blocker), H2 (`PERF-003`) | session policy blocking metrics, Contact Lens test rule | `troubleshooting-guide.md`, `iam-permission-errors.md` |
 | **Z** | Z1 | no pattern matches — general triage | this file |
 
-**Finding-ID drift:** pillar files use `OPS-001`/`AI-001`; an earlier `SKILL-troubleshoot.md`
-draft used `OPS-004`/`AI-007` for the same findings. On D-FIND, match on the pillar file that
-produced the finding.
+**Finding-ID drift:** pillar files use `OPS-001`/`AI-001`; an earlier internal draft used
+`OPS-004`/`AI-007` for the same findings. On D-FIND, match on the pillar file that produced the
+finding.
 
 ### Category Z — an honest gap marker
 
@@ -484,13 +484,12 @@ Load **only** what the selected categories need. §7 Routing is the table.
 |---|---|---|
 | `global-rules.md` | **every run** | **Stop** — no grounding or write rules |
 | `troubleshooting-guide.md` | A, B, C, E, G, H | `NOT ASSESSED — procedure unavailable` |
-| `call-quality-playbook.md` | D (incl. D0 gate, CCP log retrieval §5.A.1) | D0 still asked; diagnosis is a gap |
+| `call_quality_playbook.md` | D (incl. D0 gate, CCP log retrieval §5.A.1) | D0 still asked; diagnosis is a gap |
 | `acgr-sync-operations.md` | F2–F6 | those findings become Z1 gaps |
 | `iam-permission-errors.md` | C4, H1 disambiguation | E1 + inline `simulate-principal-policy`; state reduced confidence |
 | `waf-pillar-checks.md` | post-fix confirmation | use the pattern's own `verify` |
 | `connect-pillar-{1..7}-*.md` | D-FIND T0 evidence | rebuild at T1 instead of reusing |
-| `worked-example.md` | validating a run, onboarding, authoring | — |
-| API surface catalog | operation existence | **not required** — rule 7 uses the installed CLI |
+| `api-surface.md` | operation existence | **not required** — rule 7 uses the installed CLI |
 
 **Resolution:** local `references/`, then the host agent space. If a needed reference resolves
 in neither, **report the affected category as a gap and continue with what does resolve.** Never
@@ -498,7 +497,7 @@ improvise a procedure to cover a missing reference.
 
 ### Note for pattern authors
 
-Port patterns from `SKILL-troubleshoot.md` unchanged **except**: add the Pattern Contract
+Port patterns from the source pattern draft unchanged **except**: add the Pattern Contract
 headers, and replace each hardcoded numeric literal with `static:` (justified) or `derive:`.
 Strip run-specific artifacts — the source contains a personal Salesforce origin, a hardcoded
 `$5.00` budget, and fixed 2026-06 dates that must not ship as defaults.

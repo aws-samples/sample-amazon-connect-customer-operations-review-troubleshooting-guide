@@ -12,8 +12,8 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | ListInstances | List all Connect instances in region | List |
 | DescribeInstance | Instance details, service role, status | Read |
 | DescribeInstanceAttribute | Instance feature flags (Contact Lens, outbound, etc.) | Read |
-| ListInstanceStorageConfigs | List storage config associations — REQUIRED FIRST to get AssociationId | List |
-| DescribeInstanceStorageConfig | S3/KMS storage config detail — requires AssociationId from ListInstanceStorageConfigs | Read |
+| ListInstanceStorageConfigs | List storage config associations — REQUIRED FIRST to get AssociationId. Requires `--resource-type` (e.g. CALL_RECORDINGS, CHAT_TRANSCRIPTS, SCHEDULED_REPORTS, MEDIA_STREAMS, CONTACT_TRACE_RECORDS, AGENT_EVENTS) | List |
+| DescribeInstanceStorageConfig | S3/KMS storage config detail — requires AssociationId (from ListInstanceStorageConfigs) **and** `--resource-type` | Read |
 | ListContactFlows | List all flows by type (CONTACT_FLOW, CUSTOMER_QUEUE, etc.) | List |
 | DescribeContactFlow | Full flow definition including JSON content | Read |
 | ListContactFlowModules | List reusable flow modules | List |
@@ -36,8 +36,8 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | GetContactAttributes | Attributes set during a contact | Read |
 | ListTaskTemplates | List task templates | List |
 | GetTaskTemplate | Task template definition | Read |
-| ListNotificationRules | List notification rules | List |
-| DescribeNotification | Notification config | Read |
+| ListRules | List event/automation rules (incl. notification-trigger rules) | List |
+| DescribeRule | Rule condition and action config | Read |
 | GetCurrentMetricData | Real-time queue/agent metrics ⚠️ SESSION POLICY SENSITIVE | Read |
 | GetMetricData | Historical metrics (legacy) ⚠️ SESSION POLICY SENSITIVE | Read |
 | GetMetricDataV2 | Historical metrics V2 (preferred) ⚠️ SESSION POLICY SENSITIVE | Read |
@@ -61,15 +61,22 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | logs:DescribeLogStreams | List log streams in a group |
 
 **Key CloudWatch metrics for Connect (namespace: AWS/Connect):**
-- ContactsInQueue — contacts waiting per queue
-- OldestContactAge — age of oldest waiting contact
-- CallsBreachingConcurrencyQuota — calls hitting concurrent call limit
-- ContactFlowErrors — non-fatal flow errors
+- QueueSize — number of contacts in a queue (dimension: QueueName)
+- LongestQueueWaitTime — longest time (seconds) a contact waited in a queue (dimension: QueueName)
+- ContactFlowErrors — non-fatal flow errors (error branch taken)
 - ContactFlowFatalErrors — fatal errors terminating contacts
-- MissedCalls — calls not answered
-- ThrottledCalls — calls throttled due to quota
-- ContactsHandled / ContactsAbandoned / ContactsQueued
-- AgentInteractionDuration / AfterContactWorkTime / HandleTime
+- MissedCalls — calls not answered by an agent within 20s
+- ThrottledCalls — calls rejected because calls-per-second exceeded the quota
+- CallsBreachingConcurrencyQuota — calls exceeding the concurrent-calls quota
+- QueueCapacityExceededError — calls rejected because the queue was full
+- ConcurrentCalls / ConcurrentCallsPercentage — active calls and % of quota
+- ToInstancePacketLossRate — WebRTC packet loss (dimensions: Participant, Type of Connection, Instance ID, Stream Type)
+
+> **Not CloudWatch metrics:** agent/handle-time figures (ContactsHandled, ContactsAbandoned,
+> ContactsQueued, AgentInteractionDuration, AfterContactWorkTime/ACW, average handle time) are
+> **historical / real-time metrics**, not published to the AWS/Connect CloudWatch namespace and
+> **cannot be alarmed on** via CloudWatch. Retrieve them with connect:GetMetricDataV2 (historical)
+> or connect:GetCurrentMetricData (real-time — metric enums CONTACTS_IN_QUEUE, OLDEST_CONTACT_AGE, etc.).
 
 ---
 
@@ -92,9 +99,9 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | ListLexBots | Lex V1 bots associated | List |
 | ListBots | Lex V2 bots associated | List |
 | ListApprovedOrigins | CORS approved origins | List |
-| ListIntegrationAssociations | All integration types (EVENT, VOICE_ID, WISDOM, Q_IN_CONNECT, etc.) | List |
+| ListIntegrationAssociations | All integration types (EVENT, WISDOM, Q_IN_CONNECT, etc.) | List |
 | ListSecurityKeys | Signing keys for instance | List |
-| DescribeVocabulary | Custom vocabulary / Voice ID domain | Read |
+| DescribeVocabulary | Custom vocabulary details | Read |
 | Search custom vocabularies (no direct list-all API exists) | Read
 | ListTagsForResource | Tags on Connect resources | Read |
 | GetFederationToken | Generate SAML login URL for testing | Read |
@@ -141,13 +148,13 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | ListLambdaFunctions | Lambda integrations (check for DLQ config) |
 | ListAgentStatuses | Available agent states |
 | DescribeAgentStatus | Agent status details |
-| GetCurrentMetricData | ContactsInQueue, OldestContactAge ⚠️ SESSION POLICY SENSITIVE |
+| GetCurrentMetricData | Real-time metrics CONTACTS_IN_QUEUE, OLDEST_CONTACT_AGE ⚠️ SESSION POLICY SENSITIVE |
 
 ### cloudwatch: namespace
 | Metric/Alarm | Reliability Purpose |
 |---|---|
-| ContactsInQueue alarm | Alert on queue flooding |
-| OldestContactAge alarm | Alert on SLA breach risk |
+| QueueSize alarm | Alert on queue flooding (contacts in queue) |
+| LongestQueueWaitTime alarm | Alert on SLA breach risk (longest wait in queue) |
 | CallsBreachingConcurrencyQuota | Alert on capacity limit approach |
 | ContactFlowFatalErrors | Alert on flow failures |
 
@@ -173,7 +180,7 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 | ListRoutingProfileQueues | Queue assignments |
 | ListQueues | Queue inventory |
 | DescribeQueue | Queue config, max contacts |
-| ListBots / DescribeLexBot | Bot configuration |
+| ListBots (Lex V2) / ListLexBots (Lex V1) | Bot associations on the instance |
 | ListLambdaFunctions | Lambda performance dependencies |
 | ListTaskTemplates / GetTaskTemplate | Task template efficiency |
 
@@ -189,8 +196,8 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 ### Contact Lens (connect: namespace)
 | API Action | Description |
 |---|---|
-| connect:ListRealtimeContactAnalysisSegments | Real-time transcript/analysis segments |
-| connect:ListRealtimeContactAnalysisSegmentsV2 | V2 with output types (Raw/Redacted) |
+| contact-lens:ListRealtimeContactAnalysisSegments | Real-time transcript/analysis segments (V1 lives in the `connect-contact-lens` namespace, NOT `connect:`) |
+| connect:ListRealtimeContactAnalysisSegmentsV2 | V2 with output types (Raw/Redacted) — this one IS in the `connect:` namespace |
 | connect:ListContactEvaluations | QA evaluation results |
 | connect:DescribeContactEvaluation | Evaluation score details |
 | connect:ListEvaluationForms | QA evaluation form templates |
@@ -299,11 +306,11 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 ### Contact Lens (connect: namespace)
 | API Action | Description |
 |---|---|
-| connect:ListRealtimeContactAnalysisSegments | Real-time transcript segments |
-| connect:ListRealtimeContactAnalysisSegmentsV2 | V2 with Raw/Redacted output types |
+| contact-lens:ListRealtimeContactAnalysisSegments | Real-time transcript segments (V1 lives in the `connect-contact-lens` namespace, NOT `connect:`) |
+| connect:ListRealtimeContactAnalysisSegmentsV2 | V2 with Raw/Redacted output types — this one IS in the `connect:` namespace |
 | connect:ListContactEvaluations | QA evaluation results per contact |
 | connect:DescribeContactEvaluation | Evaluation score and answers |
-| connect:CreateContactEvaluation | Start a QA evaluation |
+| connect:StartContactEvaluation | Start a QA evaluation |
 | connect:SubmitContactEvaluation | Submit evaluation answers |
 | connect:ListEvaluationForms | QA form templates |
 | connect:DescribeEvaluationForm | Form structure |

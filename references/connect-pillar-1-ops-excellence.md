@@ -108,7 +108,7 @@ cloudwatch:ListMetrics
 - [ ] Alarm existence — MUST have alarms on:
   - `ContactFlowErrors` (CRITICAL if missing)
   - `ContactFlowFatalErrors` (CRITICAL if missing)
-  - `MissedCalls` or `ContactsInQueue` (HIGH if missing)
+  - `MissedCalls` or `QueueSize` (HIGH if missing)
   - `ConcurrentCalls` / `ConcurrentCallsPercentage` (MEDIUM if missing)
 - [ ] Alarm state — any in ALARM or INSUFFICIENT_DATA?
 - [ ] Custom metrics — any custom namespace metrics for Connect?
@@ -124,9 +124,9 @@ logs:DescribeLogGroups
 
 **Checks**:
 - [ ] Log group exists per instance — `/aws/connect/{instanceId}` 
-- [ ] Contact flow logging enabled — cross-ref with Phase 0 `CONTACT_FLOW_LOGS` attribute
-- [ ] If CONTACT_FLOW_LOGS=true but no log group → something is wrong
-- [ ] If CONTACT_FLOW_LOGS=false → CRITICAL finding (flow errors invisible)
+- [ ] Contact flow logging enabled — cross-ref with Phase 0 `CONTACTFLOW_LOGS` attribute
+- [ ] If CONTACTFLOW_LOGS=true but no log group → something is wrong
+- [ ] If CONTACTFLOW_LOGS=false → CRITICAL finding (flow errors invisible)
 
 **Error handling**: 
 - If `logs:DescribeLogGroups` fails with tag condition error → note "Log group verification blocked by IAM tag condition" and move on
@@ -170,7 +170,7 @@ connect:ListTrafficDistributionGroups (if not already in Phase 0)
 #### 🔴 CRITICAL
 - [OPS-001] Contact flow logging DISABLED on instance {alias}
   - Impact: Flow errors are invisible. Cannot troubleshoot customer-impacting issues.
-  - API: DescribeInstanceAttribute(CONTACT_FLOW_LOGS) = false
+  - API: DescribeInstanceAttribute(CONTACTFLOW_LOGS) = false
   - Fix: Enable contact flow logs in instance settings
   
 - [OPS-002] No CloudWatch alarms for ContactFlowErrors

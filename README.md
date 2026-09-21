@@ -2,7 +2,7 @@
 
 A structured, read-only-by-default skill for running Well-Architected operations reviews
 and troubleshooting Amazon Connect instances — usable by any AI tool with AWS CLI/SDK
-access, not just this agent.
+access, not just a specific agentic tool.
 
 ## What This Skill Is For
 
@@ -79,9 +79,10 @@ Nothing is applied at the end of this — the report is a proposal set, not a ch
 - **No extrapolation.** A finding on one resource is never assumed true for a similar
   one unless it was checked individually.
 - **No default-value assumptions** — e.g., contact flow logging must be verified at both
-  instance and flow level; Lambda timeout in a contact flow is a fixed 8 seconds; DTMF
-  is only captured in "Get customer input" blocks; CTRs may take up to 24 hours without
-  Kinesis streaming.
+  instance and flow level; a contact flow's Lambda block timeout is configurable up to 8s
+  (synchronous) / 60s (asynchronous); DTMF is only captured in "Get customer input" blocks;
+  contact records are delivered at least once and retained for 24 months (use Kinesis
+  streaming for near-real-time delivery).
 
 ## Example Requests
 

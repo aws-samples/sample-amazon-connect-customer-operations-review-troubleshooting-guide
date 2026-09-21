@@ -149,8 +149,8 @@ Once D0.1–D0.5 are resolved, route to sub-patterns:
 | **CCP** | Contact Control Panel — the agent interface for receiving/managing calls and chats |
 | **WebRTC** | Web Real-Time Communication — browser-based technology for encrypted audio/video; Connect uses it for softphone connectivity |
 | **ICE** | Interactive Connectivity Establishment — protocol for NAT traversal in WebRTC (STUN/TURN) |
-| **TURN** | Traversal Using Relays around NAT — relay server used when direct UDP fails (TCP 443 fallback) |
-| **CTR** | Contact Trace Record — metadata record for each contact in Amazon Connect |
+| **TURN** | Traversal Using Relays around NAT — relay server that carries WebRTC media over UDP 3478 when a direct peer-to-peer path can't be established |
+| **CTR / contact record** | Metadata record for each contact in Amazon Connect (AWS now uses "contact record"; "contact trace record/CTR" is the former term) |
 
 ---
 
@@ -244,9 +244,9 @@ If customer-side audio is clean but agent-side is degraded → agent network iss
 
 Amazon Connect softphone requires:
 
-- **UDP port 3478** — STUN/TURN for media (preferred)
-- **TCP port 443** — TURN fallback when UDP is blocked
-- **WebSocket** — signaling channel (must not be intercepted by proxy)
+- **UDP port 3478** (SEND/RECEIVE) — STUN/TURN for media; this is the media path
+- **TCP port 443** — signalling/HTTPS and the WebSocket channel (control, not a media/TURN fallback)
+- **WebSocket** — signaling channel over TCP 443 (must not be intercepted by proxy)
 - **DNS resolution** — `*.connect.aws`, `*.transport.connect.aws`
 - **Bandwidth** — minimum 100 kbps per concurrent softphone call
 - **No SSL/TLS inspection** on WebRTC or WebSocket traffic
@@ -266,10 +266,11 @@ Amazon Connect softphone requires:
 
 | Metric | Namespace | What it measures |
 | --- | --- | --- |
-| ToInstancePacketLossRate | AWS/Connect | Packets lost from agent → Connect |
-| FromInstancePacketLossRate | AWS/Connect | Packets lost from Connect → agent |
+| ToInstancePacketLossRate | AWS/Connect | Packet-loss ratio (0–100%) for WebRTC calls in the instance, reported every 10s |
 
-Dimensions: `Participant=Agent`, `Type=Voice`, `InstanceId={ID}`
+> Only `ToInstancePacketLossRate` is published to AWS/Connect. There is **no** `FromInstancePacketLossRate` metric.
+
+Dimensions: `Participant=Agent`, `Type of Connection=WebRTC`, `Instance ID={ID}`, `Stream Type=Voice`
 
 ---
 

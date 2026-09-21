@@ -2,7 +2,7 @@
 
 ## Description
 
-Assesses Amazon Connect AI capabilities: Q in Connect assistants, Connect AI Agents, AI Guardrails, AI Prompts, Contact Lens, VoiceID, knowledge bases, and evaluation forms. All wisdom: APIs require explicit grants — NOT covered by connect:*.
+Assesses Amazon Connect AI capabilities: Q in Connect assistants, Connect AI Agents, AI Guardrails, AI Prompts, Contact Lens, knowledge bases, and evaluation forms. All wisdom: APIs require explicit grants — NOT covered by connect:*.
 
 ## When to Use
 
@@ -170,7 +170,7 @@ wisdom:ListAIPromptVersions (for each, MaxResults=3)
 - Prompt version not pinned = 🟡 MEDIUM (prompt changes affect all agents)
 - Missing prompt types (e.g., no QUERY_REFORMULATION) = 🟢 LOW (using defaults)
 
-### Check 7.6 — Contact Lens & VoiceID (10 seconds max)
+### Check 7.6 — Contact Lens (10 seconds max)
 
 **Data source**: Phase 0 attributes + targeted calls
 
@@ -187,14 +187,11 @@ connect:ListEvaluationForms (MaxResults=10)
 - [ ] Contact Lens enabled — from Phase 0 CONTACT_LENS attribute
 - [ ] Contact Lens rules — automation rules configured? (auto-categorization, alerts)
 - [ ] Evaluation forms — QA evaluation templates exist?
-- [ ] VoiceID enabled — from Phase 0 VOICEID attribute
-- [ ] VoiceID integration — VOICE_ID in ListIntegrationAssociations?
 - [ ] PII redaction — Contact Lens redaction configured?
 - [ ] Rules in DRAFT state — not active, not delivering value
 
 **Findings**:
 - Contact Lens enabled but 0 rules = 🟡 MEDIUM (analytics but no automation)
-- VoiceID flag enabled but no VOICE_ID integration = 🟡 MEDIUM (feature unused)
 - Evaluation forms all in DRAFT = 🟡 MEDIUM (QA process not active)
 - Contact Lens NOT enabled on AI instance = 🟡 HIGH (can't measure AI impact)
 

@@ -13,9 +13,9 @@ Each check includes: what to look for, which API provides the data, and pass/fai
 | Check | API | Pass Criteria | Fail Signal |
 |---|---|---|---|
 | Contact flow versioning | connect:ListContactFlows + DescribeContactFlow | Flows have consistent naming convention, IaC references in tags | No tags, no naming convention, flows named 'test' or 'copy' |
-| Flow logging enabled | connect:DescribeInstanceAttribute (CONTACT_FLOW_LOGS) | Attribute = ENABLED | Attribute = DISABLED |
+| Flow logging enabled | connect:DescribeInstanceAttribute (CONTACTFLOW_LOGS) | Attribute Value = `true` | Attribute Value = `false` |
 | CloudWatch dashboards | cloudwatch:ListDashboards | Dashboard exists with Connect metrics | No dashboards found |
-| Alarms configured | cloudwatch:DescribeAlarms | Alarms on ContactsInQueue, OldestContactAge, ContactFlowFatalErrors | No alarms found |
+| Alarms configured | cloudwatch:DescribeAlarms | Alarms on QueueSize, LongestQueueWaitTime, ContactFlowFatalErrors | No alarms found |
 | Multi-region awareness | connect:ListTrafficDistributionGroups | TDG exists for production instances | Production instance has no TDG |
 | Consistent naming | connect:ListInstances | Alias follows pattern (env-appname-region) | Aliases like 'test123' or 'amazon-connect-<random>' |
 | Custom agent statuses | connect:ListAgentStatuses | CUSTOM type statuses match business needs | Only ROUTABLE/OFFLINE system statuses |
@@ -103,7 +103,6 @@ Each check includes: what to look for, which API provides the data, and pass/fai
 | Knowledge base synced | wisdom:GetKnowledgeBase | Status = ACTIVE | Status = CREATE_FAILED or SYNC_FAILED |
 | AI agent activated | wisdom:ListAIAgents | Agent state = ACTIVE | Agent in DRAFT state |
 | Guardrails configured | wisdom:ListAIGuardrails | At least one guardrail with topic restrictions | No guardrails on Q in Connect instances |
-| VoiceID per-region domain | connect:ListIntegrationAssociations (VOICE_ID type) | Voice ID integration exists per region used | Voice ID configured in one region only |
-| PII redaction | connect:DescribeInstanceAttribute (CONTACT_LENS_VOICE/CHAT) | Contact Lens enabled + PII redaction configured | Contact Lens disabled |
+| PII redaction | connect:DescribeInstanceAttribute (CONTACT_LENS) | Contact Lens enabled + PII redaction configured | Contact Lens disabled |
 | Contact Lens evaluation forms | connect:ListEvaluationForms | At least one active evaluation form | No evaluation forms |
 | AI prompt versioning | wisdom:ListAIPromptVersions | Prompts versioned, production uses pinned version | Using DRAFT prompt in production |

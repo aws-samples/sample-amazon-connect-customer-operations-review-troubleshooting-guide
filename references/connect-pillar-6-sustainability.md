@@ -38,7 +38,7 @@ Phase 0 data check:
 - [ ] Dev + Production in same region → expected, but review if dev is idle
 - [ ] Instances with overlapping functionality (same queues/flow names) → merge candidate
 - [ ] Abandoned instances (0 users, 0 queues) → delete candidates
-- [ ] Unused features enabled — VOICEID enabled but no Voice ID integration?
+- [ ] Unused features enabled — a feature attribute set to `true` with no corresponding integration/usage?
 
 **Analysis criteria**:
 - Same-region instances with <5 users each → strong consolidation signal
@@ -213,7 +213,7 @@ connectcampaignsv2:DescribeCampaign (for first campaign, max 1)
 #### 🟢 LOW
 - [SUS-005] AI agent in DRAFT state — not yet delivering value
 - [SUS-006] Progressive dialer for notification-only campaign (could be agentless)
-- [SUS-007] Features enabled but no corresponding integration (VOICEID without Voice ID)
+- [SUS-007] Features enabled but no corresponding integration (e.g. Contact Lens attribute on but no analytics usage)
 
 ### Recommendations (Prioritized)
 1. Deploy self-service AI agent (highest containment impact)

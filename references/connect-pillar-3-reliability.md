@@ -110,7 +110,7 @@ lambda:GetFunction (for each Lambda ARN, max 5)
 
 **Checks**:
 - [ ] DLQ configured — Lambda without DLQ = silent failures in contact flows
-- [ ] Timeout — Lambda timeout > 8 seconds risks Connect timeout (8s limit for sync invoke)
+- [ ] Timeout — the flow's Lambda block times out at a configurable max of 8s (Synchronous) / 60s (Asynchronous); a Lambda whose own timeout exceeds the block setting risks being cut off (Error branch)
 - [ ] Runtime — deprecated runtimes (Python 3.8, Node 14) = maintenance risk
 - [ ] Same-region — Lambda in different region than Connect instance = latency
 
@@ -133,7 +133,7 @@ cloudwatch:GetMetricData
 ```
 
 **Checks**:
-- [ ] Queue depth alarms — exist for ContactsInQueue? OldestContactAge?
+- [ ] Queue depth alarms — exist for QueueSize? LongestQueueWaitTime?
 - [ ] Concurrency trending — approaching service quota?
 - [ ] Alarms on ConcurrentCallsPercentage — threshold at 80%?
 - [ ] Historical peak — what's the max concurrent calls in last 24h?
@@ -143,15 +143,21 @@ cloudwatch:GetMetricData
 - DO NOT retry. DO NOT attempt GetMetricData or GetMetricDataV2.
 - Use CloudWatch data only (doesn't require elevated role)
 
-### Check 3.6 — Service Quotas Awareness (5 seconds max)
+### Check 3.6 — Service Quotas Awareness (15 seconds max)
 
-**No API calls** — analyze from Phase 0 data:
+**API call** — retrieve the account's *applied* quotas (do not rely on hardcoded defaults; applied values differ per account and Region):
+```
+aws service-quotas list-service-quotas --service-code connect --region <region>
+# Fallback for a single quota: aws service-quotas get-service-quota --service-code connect --quota-code <L-code>
+```
+Compare each applied quota `Value` against the resource counts from Phase 0. If the API is denied, note "Quota check requires servicequotas:ListServiceQuotas" and fall back to the documented **new-account defaults** below (an account's applied quota may be lower than these).
 
-**Checks**:
-- [ ] User count vs default quota (500 users default) — >400 = approaching limit
-- [ ] Phone number count vs quota (varies by type)
-- [ ] Contact flow count vs quota (500 default) — >400 = approaching limit
-- [ ] Routing profiles count vs quota (4000 default)
+**Checks** (default new-account quotas shown; prefer the live applied value):
+- [ ] User count vs quota (default 500) — >80% = approaching limit
+- [ ] Phone number count vs quota (default 10 per instance)
+- [ ] Flows per instance vs quota (default 100) — >80% = approaching limit
+- [ ] Routing profiles vs quota (default 500)
+- [ ] Connect instances per Region vs quota (default 2)
 
 **Findings**:
 - Any resource >80% of known default quota = 🟡 MEDIUM (request increase proactively)
@@ -251,8 +257,8 @@ Evaluate:
 | REL-001 | No TDG for production instance | 🔴 Critical |
 | REL-002 | Production phone numbers not in TDG | 🔴 Critical |
 | REL-003 | Lambda DLQ missing | 🟠 High |
-| REL-004 | Lambda timeout >8s | 🟠 High |
-| REL-005 | No alarm on ContactsInQueue | 🟡 Medium |
+| REL-004 | Lambda timeout exceeds the flow block max (8s sync / 60s async) | 🟠 High |
+| REL-005 | No alarm on QueueSize | 🟡 Medium |
 | REL-006 | ConcurrentCalls >80% quota | 🟡 Medium |
 | REL-007 | Real-time metrics need elevated role | 🟡 Medium |
 | REL-008 | No holiday overrides in HoO | 🟢 Low |

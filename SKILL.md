@@ -2,7 +2,8 @@
 name: "amazon-connect-ops-review-troubleshooting-guide"
 description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
+  author: "aws-samples"
   aws-services: "Amazon Connect"
   technical-domains: "Contact Center, Telephony, GenAI"
 ---
@@ -68,7 +69,7 @@ aws sts get-caller-identity
 # Per region, list and describe instances
 aws connect list-instances --region <region>
 aws connect describe-instance --instance-id <instance-id> --region <region>
-aws connect describe-instance-attribute --instance-id <instance-id> --attribute-type CONTACT_FLOW_LOGS --region <region>
+aws connect describe-instance-attribute --instance-id <instance-id> --attribute-type CONTACTFLOW_LOGS --region <region>
 aws connect list-integration-associations --instance-id <instance-id> --region <region>
 aws connect list-tags-for-resource --resource-arn <instance-arn> --region <region>
 ```
@@ -206,7 +207,7 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | Tool / API | When to use |
 |---|---|
 | `connect:describe-instance` | Instance config, status, features, ReplicationConfiguration |
-| `connect:list-instance-attributes` / `describe-instance-attribute` | Enabled features (contact flow logs, Contact Lens, VoiceID, etc.) |
+| `connect:list-instance-attributes` / `describe-instance-attribute` | Enabled features (contact flow logs, Contact Lens, etc.) |
 | `connect:describe-contact` | Specific contact details, disconnect reason |
 | `connect:describe-contact-flow` | Contact flow definition and metadata |
 | `connect:describe-queue` | Queue config, outbound caller ID, hours |
@@ -234,13 +235,13 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 ## Gotchas: Amazon Connect
 
 - Contact flow logging must be explicitly ENABLED at both the instance level AND on each contact flow. Instance-level enablement alone is not enough.
-- Contact flows have a 32 KB size limit for the flow definition.
-- Lambda functions invoked from contact flows have an 8-second timeout. This is a hard Connect limit, not configurable, regardless of the Lambda function's own timeout setting.
+- Contact flow complexity is bounded by a block limit, not a fixed byte size: a flow must have fewer than 200 blocks and a total size under 1 MB to import/export (the flow designer's block counter warns as you approach 200). There is no documented 32 KB flow-definition limit.
+- Lambda functions invoked from a contact flow have a configurable timeout up to a maximum of 8 seconds in Synchronous execution mode and up to 60 seconds in Asynchronous mode. If the Lambda's own timeout is shorter, that applies first.
 - DTMF input is only captured during "Get customer input" blocks. "Play prompt" blocks do NOT capture DTMF.
 - Agents must be in "Available" status to receive contacts. Custom "Routable" statuses do NOT route contacts unless explicitly configured.
-- CCP (Contact Control Panel) requires WebRTC — UDP port 3478 and TCP port 443, plus `*.connect.aws`/`*.transport.connect.aws` domains whitelisted. Corporate firewalls, VPN split-tunneling, and SSL inspection commonly break CCP connectivity.
+- CCP (Contact Control Panel) requires WebRTC — outbound UDP port 3478 (SEND/RECEIVE) for media/TURN, plus TCP 443 for signalling/HTTPS, with `*.connect.aws`/`*.transport.connect.aws` domains allow-listed. Media flows over UDP 3478; there is no documented TCP 443 media/TURN fallback. Corporate firewalls, VPN split-tunneling, and SSL inspection commonly break CCP connectivity.
 - Phone numbers are region-specific — a number claimed in one region cannot be used by an instance in another region.
-- Contact trace records (CTRs) are delivered asynchronously and may take up to 24 hours in default reporting. Use Kinesis streaming for near-real-time delivery.
+- Contact records (formerly "contact trace records"/CTRs) are delivered at least once and may be delivered again when new information arrives (e.g. after update-contact-attributes); there is no documented fixed 24-hour delivery window. Each record is available for 24 months from contact initiation. Use Kinesis streaming for near-real-time delivery.
 - `wisdom:*` (Q in Connect, AI Agents, AI Guardrails, AI Prompts) is a completely separate IAM namespace from `connect:*`. The `connect:*` wildcard grants zero `wisdom:` access.
 - ACGR (Amazon Connect Global Resiliency) requires SAML identity management — it cannot be enabled on `CONNECT_MANAGED` instances.
 - ACGR sync events in CloudTrail are identified by `userIdentity.invokedBy` or `sourceIPAddress` equal to `synchronization.connect.amazonaws.com` — NOT by event name, since the sync service can perform any mutation. Do not filter by the SLR's `sessionIssuer.userName`, which contains an account-specific suffix.
@@ -254,10 +255,10 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - Use `Data unavailable — [reason]` for anything that couldn't be retrieved — never guess.
 - Never extrapolate a finding confirmed on one resource to all similar resources unless each was individually checked.
 - Never use phrases like "typically", "usually", "by default" in a finding — these signal training-data inference, not live verification.
-- Lambda timeout in Connect is 8 seconds — never claim it can be increased beyond that.
+- Lambda timeout from a contact flow is configurable up to 8 seconds (Synchronous) or 60 seconds (Asynchronous) — do not claim a single fixed 8-second limit or that it cannot be changed.
 - Contact flow logs require enablement at BOTH instance and flow level — never claim instance-level alone is sufficient.
 - DTMF is only captured in "Get customer input" blocks — never claim other blocks capture DTMF.
-- CTRs can take up to 24 hours — never claim immediate availability without Kinesis streaming.
+- Contact records are delivered at least once (and may be re-delivered) and retained for 24 months — do not claim a fixed 24-hour delivery window; recommend Kinesis streaming for near-real-time needs.
 - Never report call quality status as confirmed without an explicit customer answer to the D0 ask — an absence of a reported symptom is not the same as a confirmed "no issues."
 - Never produce a Findings section (Step 4.4) without a corresponding Troubleshooting Guide entry (Step 4.5) for every finding — an ops review is not complete until every finding has been cross-referenced to a runbook and diagnosed/verified.
 - Spend no more than a couple of minutes on any single hypothesis before pivoting if inconclusive.

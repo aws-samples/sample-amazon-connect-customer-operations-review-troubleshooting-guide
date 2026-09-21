@@ -197,7 +197,7 @@ aws iam list-roles \
 # (LookupEvents does not support invokedBy as a lookup attribute directly)
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventSource,AttributeValue=connect.amazonaws.com \
-  --start-time $(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-30M +%Y-%m-%dT%H:%M:%SZ) \
   --region us-west-2 \
   --query "Events[?contains(CloudTrailEvent, 'synchronization.connect.amazonaws.com')]" \
   --max-items 20
@@ -238,13 +238,18 @@ aws connect describe-instance \
 aws connect replicate-instance \
   --instance-id <INSTANCE_ID> \
   --replica-region us-west-2 \
+  --replica-alias <REPLICA_INSTANCE_ALIAS> \
   --region us-east-1
 
 # Step 3: Monitor progress (check every 30 sec, allow up to 10 min)
-watch -n 30 'aws connect describe-instance \
-  --instance-id <INSTANCE_ID> \
-  --region us-east-1 \
-  --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"'
+# Poll every 30s (portable — no `watch` dependency; Ctrl-C to stop):
+while true; do
+  aws connect describe-instance \
+    --instance-id <INSTANCE_ID> \
+    --region us-east-1 \
+    --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"
+  sleep 30
+done
 # Wait for: "INSTANCE_REPLICATION_COMPLETE"
 
 # Step 4: Verify SLR was created
@@ -268,10 +273,14 @@ aws connect list-contact-flows \
 
 ```bash
 # Monitor until COMPLETE
-watch -n 10 'aws connect describe-instance \
-  --instance-id <INSTANCE_ID> \
-  --region us-east-1 \
-  --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"'
+# Poll every 10s (portable — no `watch` dependency; Ctrl-C to stop):
+while true; do
+  aws connect describe-instance \
+    --instance-id <INSTANCE_ID> \
+    --region us-east-1 \
+    --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"
+  sleep 10
+done
 
 # If still IN_PROGRESS after 20 min — escalate to AWS Support with:
 # - Instance IDs (primary + replica)
@@ -298,7 +307,7 @@ aws iam list-roles \
 # Check for AccessDeniedException from sync service in CloudTrail
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventSource,AttributeValue=connect.amazonaws.com \
-  --start-time $(date -u -d '6 hours ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -d '6 hours ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-6H +%Y-%m-%dT%H:%M:%SZ) \
   --region us-west-2 \
   --query "Events[?contains(CloudTrailEvent, 'synchronization.connect.amazonaws.com') && contains(CloudTrailEvent, 'AccessDeniedException')]"
 ```
@@ -306,10 +315,13 @@ aws cloudtrail lookup-events \
 #### Root Cause 2: Service Quota Exceeded
 
 ```bash
-aws service-quotas get-service-quota \
+# Connect quota codes are L-prefixed (e.g. L-12AB7C57), not names like "INSTANCE_QUOTA".
+# Look the instance quota up by name rather than hardcoding a code:
+aws service-quotas list-service-quotas \
   --service-code connect \
-  --quota-code INSTANCE_QUOTA \
-  --region us-west-2
+  --region us-west-2 \
+  --query "Quotas[?contains(QuotaName, 'instance')].[QuotaName,QuotaCode,Value]" \
+  --output table
 ```
 
 #### General Remediation
@@ -339,13 +351,18 @@ aws connect describe-instance \
 aws connect replicate-instance \
   --instance-id <INSTANCE_ID> \
   --replica-region us-west-2 \
+  --replica-alias <REPLICA_INSTANCE_ALIAS> \
   --region us-east-1
 
 # Monitor
-watch -n 30 'aws connect describe-instance \
-  --instance-id <INSTANCE_ID> \
-  --region us-east-1 \
-  --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"'
+# Poll every 30s (portable — no `watch` dependency; Ctrl-C to stop):
+while true; do
+  aws connect describe-instance \
+    --instance-id <INSTANCE_ID> \
+    --region us-east-1 \
+    --query "Instance.ReplicationConfiguration.ReplicationStatusSummaryList"
+  sleep 30
+done
 ```
 
 ---
@@ -358,7 +375,7 @@ watch -n 30 'aws connect describe-instance \
 # Check sync activity in replica region
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventSource,AttributeValue=connect.amazonaws.com \
-  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-1H +%Y-%m-%dT%H:%M:%SZ) \
   --region us-west-2 \
   --query "Events[?contains(CloudTrailEvent, 'synchronization.connect.amazonaws.com')]" \
   --max-items 20
@@ -390,7 +407,7 @@ aws connect describe-instance \
 # 2. Sync service active — events in last 30 min
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventSource,AttributeValue=connect.amazonaws.com \
-  --start-time $(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-30M +%Y-%m-%dT%H:%M:%SZ) \
   --region us-west-2 \
   --query "Events[?contains(CloudTrailEvent, 'synchronization.connect.amazonaws.com')]" \
   --max-items 5
@@ -400,7 +417,7 @@ aws connect list-traffic-distribution-groups --region us-east-1
 aws connect get-traffic-distribution \
   --id <TDG_ID> \
   --region us-east-1 \
-  --query 'TrafficDistribution.TelephonyDistribution'
+  --query 'TelephonyConfig.Distributions'
 
 # 4. Resource count match between primary and replica
 PRIMARY=$(aws connect list-contact-flows --instance-id <INSTANCE_ID> --region us-east-1 --query 'length(ContactFlowSummaryList)' --output text)
@@ -408,19 +425,30 @@ REPLICA=$(aws connect list-contact-flows --instance-id <INSTANCE_ID> --region us
 echo "Primary: $PRIMARY | Replica: $REPLICA"
 ```
 
+> **Command shape (verified against the connect API):** `update-traffic-distribution` takes three
+> independent parameters, each an object with a `Distributions` list — NOT a nested
+> `TelephonyDistribution` object:
+> - `--telephony-config` → `{"Distributions":[{"Region":"...","Percentage":N}]}` (telephony %; must sum to 100)
+> - `--agent-config` → `{"Distributions":[{"Region":"...","Percentage":N}]}` (agent %; must sum to 100)
+> - `--sign-in-config` → `{"Distributions":[{"Region":"...","Enabled":true|false}]}` (sign-in uses a **boolean `Enabled`**, not a percentage)
+>
+> Pass only the config(s) you intend to change. The examples below shift telephony + agent traffic.
+
 ### Phase 1: Shallow Failover (1%, 5 min)
 
 ```bash
 # Shift 1% traffic to replica
 aws connect update-traffic-distribution \
   --id <TDG_ID> \
-  --telephony-config '{"TelephonyDistribution":{"SignInDistribution":[{"Region":"us-east-1","Percentage":99},{"Region":"us-west-2","Percentage":1}],"AgentDistribution":[{"Region":"us-east-1","Percentage":99},{"Region":"us-west-2","Percentage":1}]}}' \
+  --telephony-config '{"Distributions":[{"Region":"us-east-1","Percentage":99},{"Region":"us-west-2","Percentage":1}]}' \
+  --agent-config '{"Distributions":[{"Region":"us-east-1","Percentage":99},{"Region":"us-west-2","Percentage":1}]}' \
   --region us-east-1
 
-# Monitor replica for 5 min, then revert
+# Monitor replica for 5 min, then revert to primary
 aws connect update-traffic-distribution \
   --id <TDG_ID> \
-  --telephony-config '{"TelephonyDistribution":{"SignInDistribution":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}],"AgentDistribution":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}}' \
+  --telephony-config '{"Distributions":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}' \
+  --agent-config '{"Distributions":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}' \
   --region us-east-1
 ```
 
@@ -430,13 +458,15 @@ aws connect update-traffic-distribution \
 # Shift 50% traffic to replica
 aws connect update-traffic-distribution \
   --id <TDG_ID> \
-  --telephony-config '{"TelephonyDistribution":{"SignInDistribution":[{"Region":"us-east-1","Percentage":50},{"Region":"us-west-2","Percentage":50}],"AgentDistribution":[{"Region":"us-east-1","Percentage":50},{"Region":"us-west-2","Percentage":50}]}}' \
+  --telephony-config '{"Distributions":[{"Region":"us-east-1","Percentage":50},{"Region":"us-west-2","Percentage":50}]}' \
+  --agent-config '{"Distributions":[{"Region":"us-east-1","Percentage":50},{"Region":"us-west-2","Percentage":50}]}' \
   --region us-east-1
 
-# Monitor 15 min, then revert
+# Monitor 15 min, then revert to primary
 aws connect update-traffic-distribution \
   --id <TDG_ID> \
-  --telephony-config '{"TelephonyDistribution":{"SignInDistribution":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}],"AgentDistribution":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}}' \
+  --telephony-config '{"Distributions":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}' \
+  --agent-config '{"Distributions":[{"Region":"us-east-1","Percentage":100},{"Region":"us-west-2","Percentage":0}]}' \
   --region us-east-1
 ```
 
@@ -472,7 +502,7 @@ aws connect update-traffic-distribution \
 ```bash
 # Enable ACGR
 aws connect replicate-instance \
-  --instance-id <INSTANCE_ID> --replica-region us-west-2 --region us-east-1
+  --instance-id <INSTANCE_ID> --replica-region us-west-2 --replica-alias <REPLICA_INSTANCE_ALIAS> --region us-east-1
 
 # Check ACGR status
 aws connect describe-instance \
@@ -482,7 +512,7 @@ aws connect describe-instance \
 # Check sync service active (last 24h)
 aws cloudtrail lookup-events \
   --lookup-attributes AttributeKey=EventSource,AttributeValue=connect.amazonaws.com \
-  --start-time $(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --start-time $(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-24H +%Y-%m-%dT%H:%M:%SZ) \
   --region us-west-2 \
   --query "Events[?contains(CloudTrailEvent, 'synchronization.connect.amazonaws.com')]" \
   --max-items 50

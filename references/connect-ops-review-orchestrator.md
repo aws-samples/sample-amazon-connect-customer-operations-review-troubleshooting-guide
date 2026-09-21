@@ -50,9 +50,9 @@ connect:ListInstances (MaxResults=10)
   - Empty response (<1 second) → skip region immediately
   - Results → for each instance:
     - connect:DescribeInstance
-    - connect:DescribeInstanceAttribute (all: CONTACT_FLOW_LOGS, CONTACT_LENS,
+    - connect:DescribeInstanceAttribute (all: CONTACTFLOW_LOGS, CONTACT_LENS,
       EARLY_MEDIA, ENHANCED_CONTACT_MONITORING, ENHANCED_CHAT_MONITORING,
-      MULTI_PARTY_CONFERENCE, INBOUND_CALLS, OUTBOUND_CALLS, VOICEID)
+      MULTI_PARTY_CONFERENCE, INBOUND_CALLS, OUTBOUND_CALLS)
     - connect:ListIntegrationAssociations (for AI detection)
     - connect:ListTagsForResource
 ```
@@ -63,7 +63,7 @@ connect:ListInstances (MaxResults=10)
 Per instance:
   - InstanceId, InstanceAlias, IdentityManagementType
   - CreatedTime, InstanceStatus, ServiceRole
-  - Attributes: {CONTACT_FLOW_LOGS: true/false, CONTACT_LENS: true/false, ...}
+  - Attributes: {CONTACTFLOW_LOGS: true/false, CONTACT_LENS: true/false, ...}
   - Integrations: [{IntegrationType, IntegrationArn}]  (only type + ARN)
   - Tags: {key: value}
 ```
@@ -130,7 +130,7 @@ Produce the Phase 0 output that all pillars will consume:
 
 | Instance | Alias | Region | Classification | Identity | Created | Key Attributes |
 |----------|-------|--------|---------------|----------|---------|----------------|
-| i-xxx    | prod  | us-east-1 | Production, AI-Focused | SAML | 2022-01-15 | CL=✅ Logs=✅ VoiceID=❌ |
+| i-xxx    | prod  | us-east-1 | Production, AI-Focused | SAML | 2022-01-15 | CL=✅ Logs=✅ ContactLens=✅ |
 
 ### Shared Resource Counts
 
