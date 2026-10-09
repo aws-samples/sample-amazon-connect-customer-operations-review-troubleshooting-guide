@@ -51,7 +51,7 @@
   {
     "id": "connect-review-pillars",
     "prompt": "List the Well-Architected pillars the skill evaluates during a Connect operations review. No account access required.",
-    "expected_output": "Mentions Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, and Generative AI.",
+    "expected_output": "Mentions Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, Generative AI, Capacity Management, and Architectural Patterns.",
     "files": [],
     "assertions": [
       "contains 'Operational' or contains 'operational'",
@@ -60,7 +60,45 @@
       "contains 'Performance' or contains 'performance'",
       "contains 'Cost' or contains 'cost'",
       "contains 'Sustainability' or contains 'sustainability'",
-      "contains 'Generative' or contains 'GenAI' or contains 'generative'"
+      "contains 'Generative' or contains 'GenAI' or contains 'generative'",
+      "contains 'Capacity' or contains 'capacity'",
+      "contains 'Architect' or contains 'architect'"
+    ]
+  },
+  {
+    "id": "connect-review-capacity-binding-constraint",
+    "prompt": "According to the skill, how does the Capacity Management pillar decide whether the ceiling on a channel is the agent pool or the service quota? No account access required.",
+    "expected_output": "Describes summing per-agent concurrency from DescribeRoutingProfile MediaConcurrencies across the agents assigned to each routing profile, and comparing that agent capacity against the applied Concurrent active <channel> per instance quota; the lower of the two is the effective ceiling and identifies the binding constraint.",
+    "files": [],
+    "assertions": [
+      "contains 'MediaConcurrencies' or contains 'concurrency'",
+      "contains 'quota'",
+      "contains 'binding' or contains 'constraint'",
+      "contains 'routing profile' or contains 'RoutingProfile'"
+    ]
+  },
+  {
+    "id": "connect-review-capacity-api-boundary",
+    "prompt": "According to the skill, can it assess Amazon Connect forecast accuracy, schedule adherence or staffing adequacy? Explain why or why not. No account access required.",
+    "expected_output": "States that Forecasting, Capacity Planning and Scheduling has no public read API — no List or Describe operation for forecasts, schedules, staffing groups or capacity plans — so their content cannot be assessed; only whether the feature is provisioned is detectable, via the applied-versus-default quota diff.",
+    "files": [],
+    "assertions": [
+      "contains 'no public' or contains 'cannot' or contains 'not assessable'",
+      "contains 'forecast' or contains 'Forecast'",
+      "contains 'schedul' or contains 'Schedul'",
+      "contains 'quota'"
+    ]
+  },
+  {
+    "id": "connect-review-architecture-flow-content",
+    "prompt": "According to the skill, how does the Architectural Patterns pillar analyse contact flow structure, and what can it not determine? No account access required.",
+    "expected_output": "Explains that DescribeContactFlow returns the flow definition as JSON in the Content field, giving an Actions array of blocks with Type, Parameters and Transitions, which makes block counts, error-path coverage and embedded ARN dependencies readable read-only; and that flow correctness or intent cannot be determined from structure.",
+    "files": [],
+    "assertions": [
+      "contains 'Content' or contains 'content'",
+      "contains 'Actions' or contains 'block'",
+      "contains 'Transitions' or contains 'error'",
+      "contains 'intent' or contains 'correctness' or contains 'cannot'"
     ]
   },
   {

@@ -332,6 +332,116 @@ Last updated: 2026-07-31 | Sources: docs.aws.amazon.com/connect/latest/APIRefere
 
 ---
 
+## Well-Architected Pillar 8 — Capacity Management
+
+### connect: namespace
+| API Action | Description |
+|---|---|
+| DescribeRoutingProfile | `MediaConcurrencies[]` — per-channel concurrency per agent and `CrossChannelBehavior`. The per-agent capacity input to the binding-constraint calculation |
+| ListRoutingProfiles | Enumerate profiles (MaxResults up to 1000) |
+| DescribeUser | `RoutingProfileId` — maps an agent to the concurrency that applies to them |
+| ListUsers | Agent headcount (MaxResults up to 1000) |
+| DescribeQueue | `MaxContacts` (queue depth ceiling), `Status`, `HoursOfOperationId` |
+| GetCurrentMetricData | Live occupancy: AGENTS_AVAILABLE, AGENTS_ONLINE, AGENTS_STAFFED, CONTACTS_IN_QUEUE, OLDEST_CONTACT_AGE ⚠️ SESSION POLICY SENSITIVE |
+| GetMetricDataV2 | Historical volume and service level for trending ⚠️ SESSION POLICY SENSITIVE |
+
+⚠️ `GetCurrentMetricData` **requires at least one `Queues` or
+`RoutingProfiles` filter value.** Calling it without one returns
+`InvalidParameterException` — a malformed request, not a permissions problem.
+Do not report it as a denial.
+
+⚠️ `GetMetricDataV2` `SERVICE_LEVEL` requires an explicit `Threshold`. Use the
+customer's stated SLA; it is a must-ask, not a default.
+
+### servicequotas: namespace
+| API Action | Description |
+|---|---|
+| ListServiceQuotas | **Applied** quota values. Primary capacity-headroom call. `MaxResults` caps at 100 and Connect publishes ~340 quotas, so a full enumeration takes ~4 pages |
+| ListAWSDefaultServiceQuotas | AWS defaults. Used **only** to detect whether a feature is provisioned by diffing the default set against the applied set — never as the limit to compare against |
+| GetServiceQuota | A single applied quota by `L-` code |
+
+⚠️ Capacity-planning quota names (`Forecast groups per instance`, `Schedules
+per instance`, `Staffing groups per instance`, `Shift profiles per instance`,
+`Agents per schedule`, `Capacity plans per instance` and similar) appear in the
+AWS **default** list but are absent from the **applied** list when the
+Forecasting, Capacity Planning and Scheduling feature is not provisioned for
+the account. That diff is the only API-observable signal of enablement.
+
+⚠️ **There is no public read API for forecast, schedule, staffing-group or
+capacity-plan content.** No `List*` or `Describe*` operation exists for them in
+the `connect:` namespace. Their content is console-only and cannot be assessed
+by an agent — see Pillar 8 Check 8.7.
+
+### cloudwatch: namespace (`AWS/Connect`)
+| Metric | Capacity purpose |
+|---|---|
+| ConcurrentCalls / ConcurrentCallsPercentage | Voice headroom vs `L-12AB7C57` |
+| ConcurrentActiveChats / ConcurrentActiveChatsPercentage | Chat headroom vs `L-D4BA6F6E` |
+| ConcurrentTasks / ConcurrentTasksPercentage | Task headroom vs `L-60553137` |
+| ConcurrentEmails / ConcurrentEmailsPercentage | Email headroom vs `L-B117F12F` |
+| CallsBreachingConcurrencyQuota | Calls **actually rejected** at the quota |
+| ChatsBreachingActiveChatQuota | Chats actually rejected at the quota |
+| TasksBreachingConcurrencyQuota | Tasks actually rejected at the quota |
+| ThrottledCalls | Calls rejected for exceeding the call *rate* |
+| QueueSize / LongestQueueWaitTime | Queue depth and wait |
+
+`CallsBreachingConcurrencyQuota`, `ChatsBreachingActiveChatQuota`,
+`TasksBreachingConcurrencyQuota` and `ThrottledCalls` are the strongest capacity
+signal available: a `Sum` > 0 means contacts were actually rejected, which is
+observed impact rather than a projection.
+
+⚠️ **`*Percentage` unit inconsistency — a 100× trap when setting a threshold.**
+Per AWS documentation, `ConcurrentCallsPercentage` and
+`ConcurrentHighVolumeCallsPercentage` emit a **decimal** (0.85 means 85%), while
+`ConcurrentActiveChatsPercentage`, `ConcurrentEmailsPercentage` and
+`ConcurrentTasksPercentage` emit an **integer** (85 means 85%). An alarm
+threshold of `80` on a decimal-valued metric requires 8000% utilisation and can
+never fire. For voice, use `0.8`; for chat, email and task, use `80`. When in
+doubt, compute utilisation from the level metric and the applied quota value
+rather than relying on the percentage metric.
+
+---
+
+## Well-Architected Pillar 9 — Architectural Patterns
+
+### connect: namespace
+| API Action | Description |
+|---|---|
+| DescribeContactFlow | **`Content` returns the flow definition as JSON** — `Actions[]` with `Identifier`, `Type`, `Parameters`, `Transitions`, plus `StartAction` and `Version`. This is what makes block-level architectural analysis a read-only operation |
+| ListContactFlows | Flow inventory with `Type`, `State`; names carry lifecycle signal |
+| ListContactFlowModules | Module inventory — reuse detection |
+| DescribeContactFlowModule | Module definition |
+| ListLambdaFunctions | Associated Lambda ARNs ⚠️ `MaxResults` caps at **25** |
+| ListBots | Associated Lex V2 bots ⚠️ `MaxResults` caps at **25** |
+| ListIntegrationAssociations | Integration topology by `IntegrationType` |
+| ListInstanceStorageConfigs | Storage architecture ⚠️ `--resource-type` is **required**, one call per type |
+| DescribeInstanceStorageConfig | Single storage association detail |
+| ListRoutingProfileQueues | Routing topology: `QueueName`, `Priority`, `Delay`, `Channel` |
+| ListPhoneNumbersV2 | Entry points; filter on `TargetArn` to scope to an instance |
+| DescribePhoneNumber | Number status and target |
+
+**Flow `Content` analysis — what is derivable read-only:**
+
+| Signal | Derivation |
+|---|---|
+| Flow complexity | `len(Actions)` against the 200-block limit |
+| Error-path coverage | `Actions[].Transitions.Errors` present and non-empty |
+| Block-type distribution | `Actions[].Type` frequency |
+| External dependencies | ARNs embedded in `Actions[].Parameters` |
+| Cross-account dependency | account field of an embedded ARN ≠ the instance's account |
+| Cross-region dependency | region field of an embedded ARN ≠ the instance's region |
+| Broken dependency | an invoked Lambda ARN absent from `ListLambdaFunctions` |
+| Module reuse | module-reference block types in `Actions` |
+| Transfer graph / reachability | `contact-flow/<id>` references inside `Content` |
+
+⚠️ The flow limit is **200 blocks per flow**. There is no documented flow
+definition byte-size limit; do not assert one.
+
+⚠️ Flow *structure* is readable; flow *intent* is not. A well-formed flow can
+route every contact to the wrong queue. Never assert correctness from structure.
+
+---
+
 ## Permission-Only Actions (IAM policy use only — not directly callable)
 
 These actions exist in IAM policies but are not directly invocable API calls:

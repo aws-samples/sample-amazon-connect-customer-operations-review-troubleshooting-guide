@@ -3,6 +3,65 @@
 All notable changes to this skill are documented here. Versions are tagged in git
 (`v1.0.0`, `v1.1.0`, …) so any release can be checked out or reverted directly.
 
+## [1.4.0] - 2026-09-21
+
+### Added
+
+Two new Well-Architected pillars, taking the review from 7 pillars to 9. Both were
+scoped by probing the live Amazon Connect API first and designing only around data that
+is actually retrievable, so each check states whether an agent can complete it unaided,
+needs a permission grant, needs a human answer, or needs AWS.
+
+- **Pillar 8 — Capacity Management** (`references/connect-pillar-8-capacity.md`).
+  Answers "will it survive success", as distinct from Pillar 3's "will it survive
+  failure". Seven checks: per-agent concurrent capacity from
+  `DescribeRoutingProfile.MediaConcurrencies`; the **binding constraint per channel**,
+  comparing summed agent capacity against the applied concurrency quota to establish
+  whether the ceiling is the agent pool or the quota; applied quota headroom with four
+  severity bands; queue depth ceilings (`MaxContacts`); live occupancy; volume trend;
+  and workforce-planning provisioning. 15 findings, `CAP-001`–`CAP-015`.
+- **Pillar 9 — Architectural Patterns**
+  (`references/connect-pillar-9-architecture.md`). Built on the fact that
+  `DescribeContactFlow` returns the flow definition as JSON in `Content`, which makes
+  block-level analysis a read-only operation. Nine checks: flow structural composition
+  against the 200-block limit; error-path coverage; external dependency topology
+  including cross-account, cross-region and unassociated-Lambda references; reuse and
+  modularity; flow lifecycle and naming hygiene; storage architecture per data type;
+  routing topology; entry-point reachability; and integration topology. 28 findings,
+  `ARCH-001`–`ARCH-028`.
+
+### Notes on scope boundaries
+
+- Amazon Connect's Forecasting, Capacity Planning and Scheduling feature has **no
+  public read API** — no `List*` or `Describe*` operation exists for forecasts,
+  schedules, staffing groups or capacity plans. Pillar 8 therefore does not attempt to
+  assess their content. What it does do is detect whether the feature is *provisioned*,
+  by diffing `ListAWSDefaultServiceQuotas` against `ListServiceQuotas`:
+  capacity-planning quota names that are present as AWS defaults but absent from the
+  applied list indicate the feature is not enabled for the account.
+- Both pillars carry an explicit must-ask table. Values such as the target service
+  level, expected growth and seasonality, shrinkage targets, and whether a restrictive
+  routing pattern is deliberate cannot be read from any API, and a finding that depends
+  on one is reported `BLOCKED` rather than assumed.
+- Pillar 9's flow-JSON checks run on a sample of up to 25 flows. The sample size is
+  reported alongside every finding and a sampled share is never presented as a measured
+  population rate.
+
+### Changed
+
+- `SKILL.md`: pillar table, "When to Use" triggers, reference-file list and Tool Quick
+  Reference extended for the two new pillars; frontmatter description and version.
+- `references/connect-ops-review-orchestrator.md`: the Step 4 pillar-routing table now
+  routes Production instances to Pillar 8 and any instance with contact flows to
+  Pillar 9.
+- `references/api-surface.md`: added Pillar 8 and Pillar 9 API sections, including the
+  `MaxResults` caps that hard-fail (`ListLambdaFunctions` and `ListBots` at 25,
+  `ListServiceQuotas` at 100, `ListInstances` at 10), the required `Queues` or
+  `RoutingProfiles` filter on `GetCurrentMetricData`, the required `--resource-type` on
+  `ListInstanceStorageConfigs`, and a table of what is derivable from flow `Content`.
+- `references/waf-pillar-checks.md`: Pillar 8 and Pillar 9 checklists.
+- `evals/eval_queries.json`: trigger evals for capacity and architecture prompts.
+
 ## [1.3.0] - 2026-09-21
 ### Fixed
 Accuracy corrections from a verification test against the live Connect API, the AWS CLI

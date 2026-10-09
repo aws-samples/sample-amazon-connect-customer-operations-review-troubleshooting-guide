@@ -1,8 +1,8 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
-description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
+description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 9 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI, Capacity Management, Architectural Patterns), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: "aws-samples"
   aws-services: "Amazon Connect"
   technical-domains: "Contact Center, Telephony, GenAI"
@@ -15,7 +15,9 @@ metadata:
 **Operations Review:**
 - User asks for an operations review, health check, or Well-Architected review of Amazon Connect
 - User wants to assess one or more specific pillars (e.g., "review my security posture", "check reliability")
-- User wants a full review across all 7 pillars
+- User wants a full review across all 9 pillars
+- User asks about capacity, headroom, concurrency, scaling, or "can we handle more volume" (Pillar 8)
+- User asks about architecture, design patterns, flow sprawl, technical debt, or maintainability (Pillar 9)
 - User wants to discover and classify Connect instances across regions
 
 **Troubleshooting & Remediation:**
@@ -128,6 +130,8 @@ For a full or partial **operations review**, load and execute only the selected 
 | 5 — Cost Optimization | `references/connect-pillar-5-cost.md` |
 | 6 — Sustainability | `references/connect-pillar-6-sustainability.md` |
 | 7 — Generative AI | `references/connect-pillar-7-genai.md` |
+| 8 — Capacity Management | `references/connect-pillar-8-capacity.md` |
+| 9 — Architectural Patterns | `references/connect-pillar-9-architecture.md` |
 
 **Cross-check pillar coverage against `references/waf-pillar-checks.md`** before treating a pillar pass as complete — it holds the full Well-Architected checklist per pillar. If a pillar file's checks don't cover an item listed there for the pillars in scope, note the gap explicitly in that pillar's findings rather than silently skipping it.
 
@@ -224,6 +228,10 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | `cloudwatch:describe-alarms` / `get-metric-data` | Alarm coverage, metric trends |
 | `logs:filter-log-events` / `describe-log-groups` | Contact flow log errors |
 | `cloudtrail:lookup-events` | ACGR sync detection, audit trail, API-level change history — read-only, available under standard agent controls, no separate elevated grant needed |
+| `servicequotas:list-service-quotas` | **Applied** quota limits for capacity headroom (Pillar 8). Paginated, `MaxResults` caps at 100, ~340 Connect quotas. Values are account- and region-specific — read them live, never hardcode a limit |
+| `connect:describe-routing-profile` | `MediaConcurrencies` — per-agent concurrent capacity per channel; the input to Pillar 8's binding-constraint calculation |
+| `connect:describe-contact-flow` | `Content` returns the flow definition as JSON — enables Pillar 9 block-level structure, error-path and dependency analysis |
+| `connect:list-instance-storage-configs` | Storage architecture per data type (Pillar 9) — `--resource-type` is required, one call per type |
 | `iam:simulate-principal-policy` | Diagnosing session-policy vs identity-policy permission errors |
 
 This table is a curated shortlist of the most commonly needed calls, not the complete set. **If a check needs an AWS API not listed here, consult `references/api-surface.md` for the complete API catalog before assuming the capability doesn't exist.**
@@ -277,6 +285,8 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - `references/connect-pillar-5-cost.md` — Pillar 5 checks (Cost Optimization)
 - `references/connect-pillar-6-sustainability.md` — Pillar 6 checks (Sustainability)
 - `references/connect-pillar-7-genai.md` — Pillar 7 checks (Generative AI)
+- `references/connect-pillar-8-capacity.md` — Pillar 8 checks (Capacity Management): binding constraint per channel, applied quota headroom, queue ceilings, occupancy, volume trend
+- `references/connect-pillar-9-architecture.md` — Pillar 9 checks (Architectural Patterns): flow structure and error paths from the flow JSON, dependency topology, modularity, storage architecture, routing and entry-point topology
 - `references/troubleshooting-guide.md` — Runbook categories A, B, C, E, G, H: index, symptom lookup, remediation plan template, detailed procedures
 - `references/call_quality_playbook.md` — Category D: mandatory call quality intake gate (D0) + PERF-CQ-001–004 procedures
 - `references/acgr-sync-operations.md` — Category F: ACGR sync architecture, detection, remediation (REL-009–013), failover test campaign

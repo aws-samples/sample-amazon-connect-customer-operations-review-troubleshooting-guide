@@ -116,6 +116,8 @@ Based on classification and shared data:
 | Phone numbers claimed | + Pillar 5 (Cost) |
 | AI-Focused classification | + Pillar 7 (GenAI) |
 | >1 instance | + Pillar 6 (Sustainability) — consolidation opportunities |
+| Production instance | + Pillar 8 (Capacity) — binding constraint and quota headroom |
+| Any instance with contact flows | + Pillar 9 (Architecture) — flow structure and dependency topology |
 | User requests specific pillar | Run only that pillar |
 | User says "full review" | Run all 7 |
 
