@@ -17,6 +17,7 @@ metadata:
 - User wants to assess one or more specific pillars (e.g., "review my security posture", "check reliability")
 - User wants a full review across all 9 pillars
 - User asks about capacity, headroom, concurrency, scaling, or "can we handle more volume" (Pillar 8)
+- User asks about workforce management, forecasting, scheduling, staffing adequacy, schedule adherence, shrinkage or occupancy (Pillar 8, Check 8.7 — **most of this has no public read API; Check 8.7 states exactly what is and is not assessable, so route here rather than concluding the skill does not cover it**)
 - User asks about architecture, design patterns, flow sprawl, technical debt, or maintainability (Pillar 9)
 - User wants to discover and classify Connect instances across regions
 
@@ -51,7 +52,7 @@ Before running any assessment, resolve these inputs. If a caller (human or orche
 | AWS account(s) | Provided explicitly, or resolve current account via `aws sts get-caller-identity` |
 | Region(s) | Provided explicitly, or scan common regions (see Step 2) |
 | Instance(s) | Provided explicitly, or discover via Step 2 and present the list for selection |
-| Pillar(s) to assess | One, several, or "all 7" — default to all 7 if unspecified for a full review |
+| Pillar(s) to assess | One, several, or "all 9" — default to all 9 if unspecified for a full review |
 
 **Safety check before any remediation (applies throughout — see `references/global-rules.md` for full detail):**
 1. Confirm the target instance's classification (production vs dev/test) — this is agent-inferred from tags/integrations in Step 2 below, NOT authoritative; state it and its basis as part of the Change Proposal
@@ -107,7 +108,7 @@ Before executing any API calls, determine the requested pillar scope:
   exclusively under out-of-scope pillars.
 
 - If the customer requests ALL pillars or a general/full operations review, 
-  execute the full catalog across all 7 pillar sections.
+  execute the full catalog across all 9 pillar sections.
 
 - An API filed under multiple pillar sections (e.g., ListLambdaFunctions under 
   Security, Reliability, and Performance) is executed once per in-scope pillar 
@@ -285,7 +286,7 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - `references/connect-pillar-5-cost.md` — Pillar 5 checks (Cost Optimization)
 - `references/connect-pillar-6-sustainability.md` — Pillar 6 checks (Sustainability)
 - `references/connect-pillar-7-genai.md` — Pillar 7 checks (Generative AI)
-- `references/connect-pillar-8-capacity.md` — Pillar 8 checks (Capacity Management): binding constraint per channel, applied quota headroom, queue ceilings, occupancy, volume trend
+- `references/connect-pillar-8-capacity.md` — Pillar 8 checks (Capacity Management): binding constraint per channel, applied quota headroom, queue ceilings, occupancy, volume trend, and the workforce-planning (Forecasting / Capacity Planning / Scheduling) assessability boundary
 - `references/connect-pillar-9-architecture.md` — Pillar 9 checks (Architectural Patterns): flow structure and error paths from the flow JSON, dependency topology, modularity, storage architecture, routing and entry-point topology
 - `references/troubleshooting-guide.md` — Runbook categories A, B, C, E, G, H: index, symptom lookup, remediation plan template, detailed procedures
 - `references/call_quality_playbook.md` — Category D: mandatory call quality intake gate (D0) + PERF-CQ-001–004 procedures

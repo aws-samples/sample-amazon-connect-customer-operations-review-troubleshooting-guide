@@ -28,7 +28,7 @@ Scope (optional — agent will confirm interactively during Phase 0):
 |---|---|---|
 | `{AWS_ACCOUNT_ID}` | 12-digit AWS account ID — one or more, comma-separated | `111122223333` or `111122223333, 444455556666` |
 | `{INSTANCE_ALIAS_OR_ID}` | Connect instance alias or full instance ID — one or more | `my-connect-prod` or leave blank for agent to discover all |
-| `{PILLAR_SELECTION}` | Pillar name(s), numbers, or "All 7" | `Security, Reliability` or `All 7` |
+| `{PILLAR_SELECTION}` | Pillar name(s), numbers, or "All 9" | `Security, Reliability` or `All 9` |
 
 All three fields are optional in the description. Phase 0 will confirm them interactively regardless — pre-filling just skips the initial question for that field.
 
@@ -69,7 +69,7 @@ Do NOT begin any assessment until SKILL.md Phase 0 scoping gate is complete and 
 Scope:
 - Account: 111122223333
 - Instance: confirm interactively
-- Pillars: All 7
+- Pillars: All 9
 - Report: HTML artifact
 ```
 

@@ -79,6 +79,18 @@ in this pillar is a percentage **of the sample**, and must be labelled as such.
 Do not extrapolate a sampled rate to the full population as though measured —
 the grounding rules forbid it.
 
+⚠️ **Reconcile your counts before reporting them.** If you publish a per-`Type`
+distribution, the per-type figures MUST sum to the population total you got
+from `ListContactFlows`. Add them up and check. A measured run reported a
+distribution totalling 62 against a population of 59 — one type was overstated
+by three while every other type was exact — which silently corrupts the
+denominator of every percentage derived from it. `ListContactFlows` returns the
+whole population in a single page for instances of this size, so a mismatch is
+an arithmetic error on your side, not an API artefact. **If the figures do not
+reconcile, recount from the response array rather than publishing both
+numbers.** Do not fold in `ListContactFlowModules`; flow modules are a separate
+resource with their own quota and are not contact flows.
+
 ⚠️ **Retry failed describes.** `DescribeContactFlow` issued concurrently can
 return transient throttling errors. A measured run lost 6 of 59 flows that way
 and the loss was silent — it simply shrank the denominator. Retry with backoff

@@ -118,8 +118,9 @@ Based on classification and shared data:
 | >1 instance | + Pillar 6 (Sustainability) — consolidation opportunities |
 | Production instance | + Pillar 8 (Capacity) — binding constraint and quota headroom |
 | Any instance with contact flows | + Pillar 9 (Architecture) — flow structure and dependency topology |
+| Workforce management, forecasting, scheduling, staffing or adherence question | Pillar 8, Check 8.7 — it defines what is assessable and what has no API. Route here rather than reporting the topic as uncovered |
 | User requests specific pillar | Run only that pillar |
-| User says "full review" | Run all 7 |
+| User says "full review" | Run all 9 |
 
 ## Step 5 — Output & Route
 
