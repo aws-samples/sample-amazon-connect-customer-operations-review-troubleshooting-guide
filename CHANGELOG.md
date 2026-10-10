@@ -3,6 +3,108 @@
 All notable changes to this skill are documented here. Versions are tagged in git
 (`v1.0.0`, `v1.1.0`, …) so any release can be checked out or reverted directly.
 
+## [1.4.0] - 2026-09-21
+
+### Added
+
+Two new Well-Architected pillars, taking the review from 7 pillars to 9. Both were
+scoped by probing the live Amazon Connect API first and designing only around data that
+is actually retrievable, so each check states whether an agent can complete it unaided,
+needs a permission grant, needs a human answer, or needs AWS.
+
+- **Pillar 8 — Capacity Management** (`references/connect-pillar-8-capacity.md`).
+  Answers "will it survive success", as distinct from Pillar 3's "will it survive
+  failure". Seven checks: per-agent concurrent capacity from
+  `DescribeRoutingProfile.MediaConcurrencies`; the **binding constraint per channel**,
+  comparing summed agent capacity against the applied concurrency quota to establish
+  whether the ceiling is the agent pool or the quota; applied quota headroom with four
+  severity bands; queue depth ceilings (`MaxContacts`); live occupancy; volume trend;
+  and workforce-planning provisioning. 15 findings, `CAP-001`–`CAP-015`.
+- **Pillar 9 — Architectural Patterns**
+  (`references/connect-pillar-9-architecture.md`). Built on the fact that
+  `DescribeContactFlow` returns the flow definition as JSON in `Content`, which makes
+  block-level analysis a read-only operation. Nine checks: flow structural composition
+  against the 200-block limit; error-path coverage; external dependency topology
+  including cross-account, cross-region and unassociated-Lambda references; reuse and
+  modularity; flow lifecycle and naming hygiene; storage architecture per data type;
+  routing topology; entry-point reachability; and integration topology. 28 findings,
+  `ARCH-001`–`ARCH-028`.
+
+### Notes on scope boundaries
+
+- Amazon Connect's Forecasting, Capacity Planning and Scheduling feature has **no
+  public read API** — no `List*` or `Describe*` operation exists for forecasts,
+  schedules, staffing groups or capacity plans. Pillar 8 therefore does not attempt to
+  assess their content. What it does do is detect whether the feature is *provisioned*,
+  by diffing `ListAWSDefaultServiceQuotas` against `ListServiceQuotas`:
+  capacity-planning quota names that are present as AWS defaults but absent from the
+  applied list indicate the feature is not enabled for the account. The check is
+  deliberately written to judge this on the bulk of those names rather than on any one
+  of them — on a known-unprovisioned instance, 20 of roughly two dozen were absent while
+  four remained applied, so a single hit proves nothing. `GetServiceQuota` returning
+  `NoSuchResourceException` on a capacity-planning `QuotaCode` is documented as the
+  equivalent cheaper probe.
+- Both pillars carry an explicit must-ask table. Values such as the target service
+  level, expected growth and seasonality, shrinkage targets, and whether a restrictive
+  routing pattern is deliberate cannot be read from any API, and a finding that depends
+  on one is reported `BLOCKED` rather than assumed.
+- Pillar 9's flow-JSON checks run on a sample of up to 25 flows. The sample size is
+  reported alongside every finding and a sampled share is never presented as a measured
+  population rate.
+
+### Refinements from end-to-end testing
+Both pillars were then run end to end against a live instance by an agent that had only
+these files to work from. Four things it got wrong or nearly wrong were traced back to
+the guidance rather than the agent, and fixed:
+
+- **Quota pagination understated.** The first draft said a full `ListServiceQuotas`
+  enumeration takes "about four pages". At the SDK layer it takes about **11** — the
+  service returns roughly 30 quotas per response regardless of `MaxResults`. The agent
+  paged ten times, concluded its own correct pagination was looping, and nearly
+  abandoned the check. Pillar 8 now states the real figure, says explicitly that a high
+  page count is not a loop signal (a repeated `QuotaCode` is), and carries a table of
+  the page counts seen at each calling layer, because the CLI's `--max-items`
+  aggregates several service round trips and reports four for the same 338 quotas.
+- **No fast path to a single quota.** A capacity review needs a handful of specific
+  quotas, so Pillar 8 now leads with `GetServiceQuota` by `QuotaCode` — four calls
+  instead of eleven pages — and publishes the codes for the channel-concurrency and
+  phone-number quotas. Quota *codes* are stable identifiers; the rule that quota
+  *values* must always be read live is unchanged and restated at that point.
+- **Error-path metric measured flow type, not quality.** Counting flows with no
+  `Errors` transition produced an alarming "29 of 59" on the test instance, but the
+  breakdown was 0 of 26 `CONTACT_FLOW` against 23 of 23 `CAMPAIGN` plus the single
+  whisper and hold flows — none of which contain a block that can fail. Pillar 9 now
+  anchors the check on failure-capable blocks rather than whole flows, scopes `ARCH-004`
+  to flows that contain at least one such block, and forbids reporting a bare
+  instance-wide count in favour of a per-`Type` breakdown.
+- **Sampling was blind to the defect it looked for.** The sample priorities selected
+  almost exclusively `CONTACT_FLOW`, where the measured rate of missing error paths is
+  zero, so the check could only ever pass. The sampling rule now requires stratifying
+  across every flow `Type` present and reporting the sample composition by type.
+
+Two related traps found while verifying the above are also now documented: an `Errors`
+array can be non-empty and still handle nothing, because `NoMatchingCondition` and
+`NoMatchingError` are a condition block's default branch rather than failure handling
+(29 flows had no `Errors` array at all, but 35 had no handler beyond those two); and
+concurrent `DescribeContactFlow` calls can fail transiently, which silently shrank a
+measured sample from 59 flows to 53, so retries and a reported describe-success count
+are now required.
+
+### Changed
+
+- `SKILL.md`: pillar table, "When to Use" triggers, reference-file list and Tool Quick
+  Reference extended for the two new pillars; frontmatter description and version.
+- `references/connect-ops-review-orchestrator.md`: the Step 4 pillar-routing table now
+  routes Production instances to Pillar 8 and any instance with contact flows to
+  Pillar 9.
+- `references/api-surface.md`: added Pillar 8 and Pillar 9 API sections, including the
+  `MaxResults` caps that hard-fail (`ListLambdaFunctions` and `ListBots` at 25,
+  `ListServiceQuotas` at 100, `ListInstances` at 10), the required `Queues` or
+  `RoutingProfiles` filter on `GetCurrentMetricData`, the required `--resource-type` on
+  `ListInstanceStorageConfigs`, and a table of what is derivable from flow `Content`.
+- `references/waf-pillar-checks.md`: Pillar 8 and Pillar 9 checklists.
+- `evals/eval_queries.json`: trigger evals for capacity and architecture prompts.
+
 ## [1.3.0] - 2026-09-21
 ### Fixed
 Accuracy corrections from a verification test against the live Connect API, the AWS CLI

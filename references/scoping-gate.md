@@ -42,7 +42,7 @@ Resolve which Well-Architected pillars to run:
 6. Sustainability — multi-instance consolidation opportunities
 7. Generative AI — AI guardrails, Q in Connect, Wisdom
 
-If unspecified, default to running all 7 for a full review. Only load pillar reference files for the selected pillars.
+If unspecified, default to running all 9 for a full review. Only load pillar reference files for the selected pillars.
 
 ### 4. Troubleshooting-Only Runs
 
@@ -59,5 +59,5 @@ Before starting assessments, produce a short summary of what will run — useful
 
 - Account(s): {account IDs}
 - Instances: {instance aliases and IDs}
-- Pillars selected: {pillar list or "All 7"} (n/a for troubleshooting-only runs)
+- Pillars selected: {pillar list or "All 9"} (n/a for troubleshooting-only runs)
 ```

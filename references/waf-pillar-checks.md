@@ -106,3 +106,50 @@ Each check includes: what to look for, which API provides the data, and pass/fai
 | PII redaction | connect:DescribeInstanceAttribute (CONTACT_LENS) | Contact Lens enabled + PII redaction configured | Contact Lens disabled |
 | Contact Lens evaluation forms | connect:ListEvaluationForms | At least one active evaluation form | No evaluation forms |
 | AI prompt versioning | wisdom:ListAIPromptVersions | Prompts versioned, production uses pinned version | Using DRAFT prompt in production |
+
+## Well-Architected Pillar 8 — Capacity Management
+
+| Check | API | Pass Criteria | Fail Signal |
+|---|---|---|---|
+| Per-agent concurrent capacity known | connect:DescribeRoutingProfile (MediaConcurrencies) | Concurrency read for every routing profile | Profile not describable |
+| Binding constraint per channel identified | ListUsers + DescribeUser + DescribeRoutingProfile + ListServiceQuotas | Agent capacity vs applied quota compared per channel | Constraint not established |
+| Quota headroom | servicequotas:ListServiceQuotas (applied, paginated) | Every resource count <60% of its **applied** quota | Any count ≥80%, or ≥100% where creates already fail |
+| Non-adjustable quota headroom | ListServiceQuotas (`Adjustable`) | No quota ≥80% with `Adjustable: false` | ≥80% and not adjustable — needs re-architecture |
+| Queue depth ceiling set | connect:DescribeQueue (MaxContacts) | MaxContacts set on production queues | MaxContacts unset — queue grows unbounded |
+| Concurrency alarm coverage | cloudwatch:DescribeAlarms | Alarm on the relevant `Concurrent*Percentage` metric | No quota alarm configured |
+| Quota breach evidence | cloudwatch `CallsBreachingConcurrencyQuota`, `ChatsBreachingActiveChatQuota`, `TasksBreachingConcurrencyQuota`, `ThrottledCalls` | Sum = 0 over the window | Sum > 0 — contacts were actually rejected |
+| Live occupancy visibility | connect:GetCurrentMetricData (requires a Queues or RoutingProfiles filter) | Call permitted; occupancy readable | AccessDenied / session policy — REQUIRES_ELEVATED_ROLE |
+| Volume trend available | connect:GetMetricDataV2 | ≥7 days of history retrievable | <7 days, or call denied |
+| Workforce planning provisioning | ListServiceQuotas vs ListAWSDefaultServiceQuotas | Capacity-planning quotas present in the applied list | Present in defaults, absent from applied — not provisioned |
+
+⚠️ Forecast, schedule and staffing-group **content** has no public read API and
+cannot be assessed here — see Pillar 8 Check 8.7.
+
+## Well-Architected Pillar 9 — Architectural Patterns
+
+| Check | API | Pass Criteria | Fail Signal |
+|---|---|---|---|
+| Flow structure readable | connect:DescribeContactFlow (`Content`) | Content returns parseable flow JSON with an Actions array | Content absent — structural analysis unavailable |
+| Flow complexity | Content → `len(Actions)` | Every flow well under 200 blocks | Any flow ≥180 (approaching) or ≥200 (at limit) |
+| Error-path coverage | Content → `Actions[].Transitions.Errors` | Every failure-capable block has an Errors branch with a real `ErrorType` | A failure-capable block with no handler, or only `NoMatchingCondition`/`NoMatchingError` defaults |
+| Dependency resolution | ListLambdaFunctions vs ARNs in Content | Every ARN a flow invokes is associated with the instance | Flow invokes a Lambda that is not associated — fails at runtime |
+| Dependency locality | ARNs in Content vs instance account and region | All references same-account, same-region | Cross-account or cross-region reference |
+| Modularity | connect:ListContactFlowModules + module blocks | Modules used where logic repeats | Zero modules on an instance with >20 flows |
+| Flow lifecycle | ListContactFlows (`Status`, `State`) | No SAVED flow is a live entry point; no referenced ARCHIVED flow | Unpublished flow behind a phone number |
+| Naming hygiene | ListContactFlows names | No `Copy of` nesting, no default `Sample ` names in production | `Copy of Copy of ...` sprawl, generated suffixes |
+| Contact-record export | connect:ListInstanceStorageConfigs (`--resource-type CONTACT_TRACE_RECORDS`) | Storage configured | Not configured — no durable contact record export |
+| Agent event export | ListInstanceStorageConfigs (`--resource-type AGENT_EVENTS`) | Storage configured | Not configured — no agent state history |
+| Routing topology | connect:ListRoutingProfileQueues | Distinct priority/delay ladder; every queue reachable | Queue referenced by no profile; priorities all identical |
+| Entry-point integrity | ListPhoneNumbersV2 + DescribePhoneNumber | Every claimed number targets a flow, status CLAIMED | Number with no target, or FAILED status |
+| Integration targets resolve | connect:ListIntegrationAssociations | Every association's target resolves | Unresolvable association target |
+
+⚠️ Checks over flow JSON run on a **sample** (up to 25 flows). Report the
+sample size with every finding and never present a sampled share as a measured
+population rate. Flow *correctness* is not assessable from the API — structure
+is readable, intent is not.
+
+⚠️ **Stratify the sample across flow `Type` and report error-path results per
+type.** Non-`CONTACT_FLOW` types (`CAMPAIGN`, whisper, hold) routinely have no
+error branch because they contain nothing that can fail, so an instance-wide
+count conflates them with real IVR paths and is not interpretable. See
+`references/connect-pillar-9-architecture.md` for the measured breakdown.

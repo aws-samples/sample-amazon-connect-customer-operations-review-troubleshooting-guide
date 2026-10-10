@@ -9,8 +9,9 @@ access, not just a specific agentic tool.
 Two related jobs, one skill:
 
 1. **Operations Review** — a full or partial Well-Architected assessment of one or more
-   Connect instances across 7 pillars (Operational Excellence, Security, Reliability,
-   Performance, Cost, Sustainability, Generative AI).
+   Connect instances across 9 pillars (Operational Excellence, Security, Reliability,
+   Performance, Cost, Sustainability, Generative AI, Capacity Management,
+   Architectural Patterns).
 2. **Troubleshooting & Remediation** — diagnosing a specific finding (e.g. `SEC-001`,
    `REL-011`) or an open-ended symptom (choppy calls, missing CTRs, ACGR out of sync),
    and proposing — but never silently applying — a fix.
