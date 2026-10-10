@@ -145,24 +145,81 @@ per-account and per-region and are routinely raised above AWS defaults. Every
 number in this check MUST come from the live response in this session. If the
 call fails, the check did not run — do not substitute a documented default.
 
-**API calls**:
+#### Preferred: fetch the quotas you need directly (4 calls, no pagination)
+
+`ListServiceQuotas` enumerates everything; `GetServiceQuota` fetches one quota
+by code. A capacity review needs a handful, so fetch them directly and skip the
+enumeration entirely:
+
+```
+servicequotas:GetServiceQuota
+  ServiceCode: connect
+  QuotaCode:   <code from the table below>
+  EXTRACT: Quota.Value, Quota.Adjustable, Quota.QuotaName
+```
+
+| Quota | QuotaCode |
+|---|---|
+| Concurrent active calls per instance | `L-12AB7C57` |
+| Concurrent active chats per instance | `L-D4BA6F6E` |
+| Concurrent active tasks per instance | `L-60553137` |
+| Phone numbers per instance | `L-8F812903` |
+
+**Quota codes are stable AWS identifiers and are safe to use as lookup keys.
+Quota _values_ are not** — the `CRITICAL RULE` above still applies in full. The
+code tells you which quota to ask for; only the live response tells you its
+limit. Never carry a value over from this file or from AWS documentation.
+
+If a `QuotaCode` returns `NoSuchResourceException`, that quota is not
+provisioned for this account — see Check 8.7 for what that means. Fall back to
+the enumeration below if you need a quota not listed here.
+
+#### Fallback: full enumeration
+
 ```
 servicequotas:ListServiceQuotas
   ServiceCode: connect
   MaxResults:  100            ← hard maximum
 ```
 
-⚠️ **This is a paginated call.** Amazon Connect publishes roughly 340 quotas,
-so expect about four pages. Pass `NextToken` only when the immediately
-preceding response returned one, use it verbatim, and stop when a response has
-no `NextToken`. Reusing or synthesising a token returns
-`InvalidPaginationTokenException`. Accumulate all pages before reasoning.
+⚠️ **This is a paginated call, and it pages far more than the quota count
+suggests.** Amazon Connect publishes about 338 quotas, but the service returns
+roughly 30 per response regardless of `MaxResults`, so a full enumeration takes
+**about 11 round trips, not four.** Ten or twelve pages is normal and is not
+evidence of a pagination loop — do not abandon the enumeration or report it as
+malfunctioning on page count alone. The only real loop signal is a repeated
+`QuotaCode` across pages; absent that, keep going until a response omits
+`NextToken`.
 
-Most entries are `Rate of <Api> API requests` throttle limits irrelevant to
-capacity. **Discard every quota whose `QuotaName` begins with `Rate of`** and
-work only with the remainder. If a response projection or `--query` is
-available, filter server-side; otherwise filter the accumulated list. Do not
-summarise the throttle quotas.
+How many pages you observe depends on which layer you call:
+
+| Caller | Pages observed | Why |
+|---|---|---|
+| SDK / raw API with `MaxResults: 100` | ~11 | each response carries ~30 quotas |
+| `aws` CLI with `--page-size 100 --max-items 100` | 4 | `--max-items` aggregates several service round trips per returned page |
+| `aws` CLI with no paging flags | 1 | the CLI auto-paginates internally and returns the full set |
+
+All four behaviours are correct. **If you are using the CLI and only need the
+full list, issue the call with no paging flags and let it aggregate** — then
+the pagination discipline below does not apply at all, and the 338 quotas
+arrive in one result.
+
+Pass `NextToken` only when the immediately preceding response returned one, use
+it verbatim, and stop when a response has no `NextToken`. Reusing or
+synthesising a token returns `InvalidPaginationTokenException`. Accumulate all
+pages before reasoning.
+
+**Do not omit `MaxResults`.** Left unset the page size drops further, inflating
+the round trips roughly fourfold for the same data.
+
+Of those ~338 quotas only about **55 are capacity limits**; the other ~283 are
+`Rate of <Api> API requests` throttle limits irrelevant to this check. **Discard
+every quota whose `QuotaName` begins with `Rate of`** and work only with the
+remainder. If a response projection or `--query` is available, filter
+server-side; otherwise filter the accumulated list. Do not summarise the
+throttle quotas. The channel-concurrency quotas that Check 8.2 depends on sort
+late in the enumeration, which is another reason to prefer the direct fetch
+above when those are all you need.
 
 **Map quota names to Phase 0 counts** (exact `QuotaName` match):
 
@@ -343,6 +400,23 @@ servicequotas:ListAWSDefaultServiceQuotas  ServiceCode=connect
     as AWS defaults but are ABSENT from the applied list indicate the feature
     is not provisioned for this account.
 ```
+
+⚠️ **Judge this on the bulk, not on any single quota.** The two lists differ by
+more than this feature, and a handful of capacity-planning-adjacent quotas stay
+in the applied list even when the feature is not provisioned — on a
+known-unprovisioned instance, four of roughly two dozen were still applied
+(including `Scheduled reports per instance`, which is a reporting limit, and
+`Demand groups per forecast group`). So:
+
+- **Not provisioned** = the large majority of capacity-planning quota names are
+  absent from the applied list.
+- Finding one such name in the applied list does **not** establish that the
+  feature is provisioned. Do not conclude from a single hit.
+
+Equivalently, `servicequotas:GetServiceQuota` on a capacity-planning
+`QuotaCode` returns `NoSuchResourceException` when the feature is not
+provisioned, which is a cheaper probe than the full set diff if you already
+have a code to hand. Apply the same rule: probe several, judge on the pattern.
 
 **Checks**:
 - [ ] Capacity-planning quotas present in defaults but absent from applied

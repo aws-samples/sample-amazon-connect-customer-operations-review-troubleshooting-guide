@@ -131,7 +131,7 @@ cannot be assessed here — see Pillar 8 Check 8.7.
 |---|---|---|---|
 | Flow structure readable | connect:DescribeContactFlow (`Content`) | Content returns parseable flow JSON with an Actions array | Content absent — structural analysis unavailable |
 | Flow complexity | Content → `len(Actions)` | Every flow well under 200 blocks | Any flow ≥180 (approaching) or ≥200 (at limit) |
-| Error-path coverage | Content → `Actions[].Transitions.Errors` | Every failure-capable block has an Errors branch | A flow with no error path on any block |
+| Error-path coverage | Content → `Actions[].Transitions.Errors` | Every failure-capable block has an Errors branch with a real `ErrorType` | A failure-capable block with no handler, or only `NoMatchingCondition`/`NoMatchingError` defaults |
 | Dependency resolution | ListLambdaFunctions vs ARNs in Content | Every ARN a flow invokes is associated with the instance | Flow invokes a Lambda that is not associated — fails at runtime |
 | Dependency locality | ARNs in Content vs instance account and region | All references same-account, same-region | Cross-account or cross-region reference |
 | Modularity | connect:ListContactFlowModules + module blocks | Modules used where logic repeats | Zero modules on an instance with >20 flows |
@@ -147,3 +147,9 @@ cannot be assessed here — see Pillar 8 Check 8.7.
 sample size with every finding and never present a sampled share as a measured
 population rate. Flow *correctness* is not assessable from the API — structure
 is readable, intent is not.
+
+⚠️ **Stratify the sample across flow `Type` and report error-path results per
+type.** Non-`CONTACT_FLOW` types (`CAMPAIGN`, whisper, hold) routinely have no
+error branch because they contain nothing that can fail, so an instance-wide
+count conflates them with real IVR paths and is not interpretable. See
+`references/connect-pillar-9-architecture.md` for the measured breakdown.

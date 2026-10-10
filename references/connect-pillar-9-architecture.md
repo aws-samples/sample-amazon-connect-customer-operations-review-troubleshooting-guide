@@ -63,10 +63,28 @@ TO 25 flows, prioritised:
 4. Largest flows by `Content` length, if a prior pass recorded it
 5. Remaining `CONTACT_FLOW` types, most recently modified first
 
+⚠️ **Then stratify: add at least two flows of every other `Type` present**
+(`CAMPAIGN`, `CUSTOMER_QUEUE`, `QUEUE_TRANSFER`, `AGENT_HOLD`, `AGENT_WHISPER`,
+`CUSTOMER_HOLD`, `CUSTOMER_WHISPER`, `OUTBOUND_WHISPER`, `AGENT_TRANSFER`), or
+all of them if fewer than two exist. Priorities 1–5 above select almost
+exclusively `CONTACT_FLOW`, and the non-`CONTACT_FLOW` types behave very
+differently — on a measured instance every one of 26 `CONTACT_FLOW` flows had
+an error branch while 23 of 23 `CAMPAIGN` flows had none. A sample drawn only
+from priorities 1–5 therefore cannot see that difference at all and will report
+a clean bill of health for the whole instance. **Record the sample composition
+broken down by `Type`,** not just the total.
+
 Record the sample size and the population size in the output. Every percentage
 in this pillar is a percentage **of the sample**, and must be labelled as such.
 Do not extrapolate a sampled rate to the full population as though measured —
 the grounding rules forbid it.
+
+⚠️ **Retry failed describes.** `DescribeContactFlow` issued concurrently can
+return transient throttling errors. A measured run lost 6 of 59 flows that way
+and the loss was silent — it simply shrank the denominator. Retry with backoff
+and **report the describe success count alongside the sample size**; if any
+flow could not be described after retries, say which, rather than quietly
+reducing the sample.
 
 ## Checks
 
@@ -108,30 +126,73 @@ size limit in KB; none is documented.
 
 **Data source**: the sampled flow JSON from 9.1.
 
+#### The metric that means something
+
+The intuitive metric — "how many flows have no `Errors` transition anywhere" —
+**measures flow type, not flow quality,** and must not be reported on its own.
+On a measured instance it came out at 29 of 59 flows, which sounds alarming,
+but the breakdown was:
+
+| Type | No error branch | Reading |
+|---|---|---|
+| `CONTACT_FLOW` | 0 / 26 | every customer-facing flow handled errors |
+| `CAMPAIGN` | 23 / 23 | structurally normal — nothing in them can fail |
+| whisper / hold types | 1 / 1 each | structurally normal — they play a prompt |
+
+A whisper flow that plays one prompt has no failure-capable block, so it has
+nothing to handle and its missing `Errors` array is not a defect. The headline
+"29 of 59" was composed almost entirely of such flows.
+
+**Therefore:**
+- **Anchor the check on failure-capable blocks, not on flows.** A block that
+  can fail at runtime and has no `Errors` branch is a real defect regardless of
+  which flow it sits in. That is ARCH-005 and it is the primary finding here.
+- **Never report a single instance-wide "N of M flows lack error handling"
+  figure.** Break it down by `Type` or do not report it.
+- ARCH-004 applies only to flows that **contain at least one failure-capable
+  block**. A flow with no such block is out of scope for it — do not count it.
+
 **Derivation**:
 ```
+FAILURE_CAPABLE = { InvokeLambdaFunction, GetParticipantInput,
+                    ConnectParticipantWithLexBot, GetCustomerProfile,
+                    InvokeExternalResource, TransferContactToQueue,
+                    CreateWisdomSession, UpdateContactData }
+
 for each sampled flow F:
-    blocks_with_error_branch = count of Actions where
-                               Transitions.Errors is present and non-empty
-    has_any_error_path(F)    = blocks_with_error_branch > 0
+    capable      = [A for A in F.Actions if A.Type in FAILURE_CAPABLE]
+    unguarded    = [A for A in capable
+                    if not A.Transitions.Errors]          → ARCH-005
+    in_scope(F)  = len(capable) > 0
+    no_path(F)   = in_scope(F) and no A in capable has a real handler
 ```
 
+⚠️ **An `Errors` array can be non-empty and still handle nothing.** Entries
+with `ErrorType` of `NoMatchingCondition` or `NoMatchingError` are the default
+"else" branch of a condition check, not failure handling. Counting any
+non-empty `Errors` array as handled inflates coverage: on the measured instance
+29 flows had no `Errors` array at all, but **35** had no handler whose
+`ErrorType` was anything other than those two defaults. When deciding whether a
+block is guarded, require at least one entry whose `ErrorType` is **not** in
+`{NoMatchingCondition, NoMatchingError}`, and say which rule you applied.
+
 **Checks**:
-- [ ] Flows with no `Errors` transition on any block
-- [ ] Blocks that can fail at runtime but have no `Errors` branch —
-      `InvokeLambdaFunction`, `GetParticipantInput`,
-      `ConnectParticipantWithLexBot`, `GetCustomerProfile`,
-      `InvokeExternalResource`, `TransferContactToQueue`
+- [ ] Failure-capable blocks with no real `Errors` branch, by flow and type
+- [ ] Flows containing a failure-capable block but no real handler on any of
+      them, counted **per flow `Type`**
 - [ ] Error branches that terminate in `DisconnectParticipant` with no prior
       `MessageParticipant` — a silent hang-up
 
 **Findings**:
-- A flow with no error path anywhere = ARCH-004 🟠 High. A runtime failure in
-  such a flow drops the contact with no message and no alternative route.
-  Report the count and the share of the sample.
-- A failure-capable block with no `Errors` branch = ARCH-005 🟠 High; name the
-  flow and the block type
+- A failure-capable block with no real `Errors` branch = ARCH-005 🟠 High; name
+  the flow and the block type. **This is the headline finding of this check.**
+- A flow that has failure-capable blocks and no real handler on any of them =
+  ARCH-004 🟠 High. Report it per flow `Type` and per the sample, never as a
+  bare instance-wide count.
 - An error branch that disconnects without a message = ARCH-006 🟡 Medium
+- If every failure-capable block in the sample is guarded, **say so plainly and
+  state the sample composition by `Type`.** A clean result on a
+  `CONTACT_FLOW`-only sample is not a clean result for the instance.
 
 ### Check 9.3 — External Dependency Topology (20 seconds max)
 
@@ -365,8 +426,8 @@ State these plainly if asked; do not approximate them.
 | ARCH-001 | Flow ≥180 blocks (approaching the 200 limit) | 🟠 High |
 | ARCH-002 | Flow ≥200 blocks | 🔴 Critical |
 | ARCH-003 | Single-block non-standard flow | 🟢 Low |
-| ARCH-004 | Flow with no error path on any block | 🟠 High |
-| ARCH-005 | Failure-capable block with no `Errors` branch | 🟠 High |
+| ARCH-004 | Flow with failure-capable blocks and no real error path on any of them | 🟠 High |
+| ARCH-005 | Failure-capable block with no real `Errors` branch | 🟠 High |
 | ARCH-006 | Error branch disconnects with no message | 🟡 Medium |
 | ARCH-007 | Flow references a Lambda not associated with the instance | 🔴 Critical |
 | ARCH-008 | Cross-account resource reference in a flow | 🟠 High |
