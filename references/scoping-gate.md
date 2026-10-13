@@ -44,7 +44,11 @@ Resolve which Well-Architected pillars to run:
 
 If unspecified, default to running all 7 for a full review. Only load pillar reference files for the selected pillars.
 
-### 4. Troubleshooting-Only Runs
+### 4. Region Readiness Runs
+
+If the request is "which Region should I use / can I do X in Region Y" (no existing instance needed), skip account, Region and instance discovery entirely. Go to `references/region-readiness.md` Step R1 (requirements intake). Account access is optional and only used for the read-only live checks in Step R4.
+
+### 5. Troubleshooting-Only Runs
 
 If the request is symptom- or finding-ID-based troubleshooting rather than a full review, skip pillar selection entirely — go directly to the Runbook Category Index in `SKILL.md` and jump to the matching reference file.
 

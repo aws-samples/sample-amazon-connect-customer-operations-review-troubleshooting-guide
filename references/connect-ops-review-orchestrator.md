@@ -119,6 +119,10 @@ Based on classification and shared data:
 | User requests specific pillar | Run only that pillar |
 | User says "full review" | Run all 7 |
 
+### Region Readiness cross-check (all reviews)
+
+For each discovered instance, evaluate its Region against the configuration collected above (phone number countries/types, Contact Lens / `HIGH_VOLUME_OUTBOUND` attributes, `CASES_DOMAIN` / `WISDOM_ASSISTANT` integrations, traffic distribution groups) using "Assess an existing instance" in `references/region-readiness.md`. It reuses data already retrieved in Phase 0 or the pillar passes plus the bundled snapshot; anything not yet retrieved (e.g. the `HIGH_VOLUME_OUTBOUND` attribute) is either fetched with its read-only Describe/List call or marked `[Not checked]`, never assumed. Any non-SUPPORTED result becomes a `REG-xxx` finding routed to Runbook Category R.
+
 ## Step 5 — Output & Route
 
 Produce the Phase 0 output that all pillars will consume:

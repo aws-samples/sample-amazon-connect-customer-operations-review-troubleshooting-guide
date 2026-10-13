@@ -1,0 +1,5 @@
+{
+  "features": ["conversational_analytics.post_call_analytics", "agent_assist"],
+  "phone_numbers": [{"country": "ZA", "type": "DID", "needs": ["inbound", "national_outbound"]}],
+  "agent_countries": ["ZA"]
+}

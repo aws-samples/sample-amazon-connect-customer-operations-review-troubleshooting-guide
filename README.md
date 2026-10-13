@@ -1,4 +1,6 @@
-# Amazon Connect Operations Review & Troubleshooting Guide
+# Amazon Connect Well-Architected Toolkit
+
+> Formerly "Amazon Connect Operations Review & Troubleshooting Guide." The display name changed in 1.4.0; the skill identifier (`amazon-connect-ops-review-troubleshooting-guide`) and repository name are unchanged.
 
 A structured, read-only-by-default skill for running Well-Architected operations reviews
 and troubleshooting Amazon Connect instances — usable by any AI tool with AWS CLI/SDK
@@ -6,7 +8,7 @@ access, not just a specific agentic tool.
 
 ## What This Skill Is For
 
-Two related jobs, one skill:
+Three related jobs, one skill:
 
 1. **Operations Review** — a full or partial Well-Architected assessment of one or more
    Connect instances across 7 pillars (Operational Excellence, Security, Reliability,
@@ -14,6 +16,12 @@ Two related jobs, one skill:
 2. **Troubleshooting & Remediation** — diagnosing a specific finding (e.g. `SEC-001`,
    `REL-011`) or an open-ended symptom (choppy calls, missing CTRs, ACGR out of sync),
    and proposing — but never silently applying — a fix.
+3. **Region Readiness** — *before* anything is built, tells you which AWS Region can deliver
+   the Connect features, phone numbers (by country and type), outbound and campaign
+   destinations, agent locations, and Global Resiliency pairing you need. It needs no AWS
+   account access: a deterministic script (`scripts/region_readiness.py`) evaluates your
+   requirements against a dated snapshot of the official AWS sources and returns a
+   per-Region verdict with `REG-xxx` findings, citations, and a recommendation.
 
 Every review and every troubleshooting pass ends with the same guarantee: findings are
 evidence-backed, cross-referenced to a runbook, and nothing gets written to your Connect
@@ -69,6 +77,7 @@ Nothing is applied at the end of this — the report is a proposal set, not a ch
 | F — Reliability & DR | Traffic Distribution Groups, ACGR sync and failure recovery |
 | G — Cost | Storage lifecycle, cost spike investigation |
 | H — Metrics & Session Policy | Session-policy metric blockers, Contact Lens test rules |
+| R — Region Readiness | Feature / telephony / campaign / DR fit of a Region (`REG-001`–`REG-013`) |
 | Z — Catch-All | Anything not yet mapped — diagnosed under Z1, never dropped |
 
 ## Ground Rules You Can Rely On
@@ -91,12 +100,50 @@ Just check our security posture — do we have any open findings?
 Fix SEC-001 — walk me through the change and rollback before doing anything.
 Agents are reporting choppy audio on calls today. Investigate call quality.
 Check whether ACGR is still syncing between our primary and DR replica instances.
+Which Region should we use? We need UK and South African numbers, Contact Lens, and outbound campaigns to the UK.
+Can our eu-west-2 instance run outbound campaigns to US numbers?
 
+
+## Region Readiness — run it yourself
+
+No AWS credentials needed. Python 3.8+ (standard library only):
+
+```bash
+python3 scripts/region_readiness.py --template > requirements.json   # fill it in
+python3 scripts/region_readiness.py --input requirements.json         # Markdown report
+python3 scripts/region_readiness.py --list-features                   # feature keys
+python3 scripts/region_readiness.py --country "Japan"                 # one-country telephony lookup
+```
+
+What it checks, per Amazon Connect home Region:
+
+- **Features**, including sub-features: Contact Lens analytics by type, messaging channels, agent assist, forecasting, Cases, Customer Profiles, agentic voice, and more
+- **Phone numbers**: where each country/type can be claimed, national/international outbound, porting, multi-carrier, custom caller ID, GA/Beta status, KYC documents, and agent-location rules
+- **Outbound calling**: the default allow-list per Region and the outbound campaign destinations per Region
+- **Global Resiliency**: the supported Region pairings and prerequisites
+- **Agent isolation and latency anchoring**, from AWS architecture guidance
+
+The data is a **point-in-time snapshot** (`references/region-data/connect-region-data.json`; its
+date is printed on every report). Maintainers refresh it with
+`python3 scripts/build_region_data.py` (needs network and `pip install pdfplumber`). The build
+verifies that every tick in the Telecoms Coverage Guide was parsed, and that every quoted
+AWS sentence still appears on its page. Review `parse_warnings` in the JSON before shipping a
+refresh.
+
+Sources: [Supported Regions](https://docs.aws.amazon.com/connect/latest/adminguide/regions.html) ·
+[Telecoms Coverage Guide (PDF)](https://d1v2gagwb6hfe1.cloudfront.net/Amazon_Connect_Telecoms_Coverage.pdf) ·
+[Phone number requirements by country](https://docs.aws.amazon.com/connect/latest/adminguide/phone-number-requirements.html) ·
+[Default outbound countries](https://docs.aws.amazon.com/connect/latest/adminguide/country-code-allow-list.html) ·
+[Global Resiliency replicas](https://docs.aws.amazon.com/connect/latest/adminguide/create-replica-connect-instance.html) ·
+[Low-latency design](https://docs.aws.amazon.com/connect/latest/adminguide/low-latency-design.html) ·
+[Region selection](https://docs.aws.amazon.com/connect/latest/adminguide/operational-excellence.html) ·
+[Single vs multiple instances](https://docs.aws.amazon.com/connect/latest/adminguide/single-instance-multiple-instances.html) ·
+[Supported languages](https://docs.aws.amazon.com/connect/latest/adminguide/supported-languages.html)
 
 ## Prerequisites
 
 - AWS CLI/SDK access with `connect`, `cloudwatch`, `logs`, `lambda`, `wisdom`,
-  `cloudtrail`, and `iam` (read) permissions
+  `cloudtrail`, and `iam` (read) permissions (not needed for Region Readiness)
 - Contact flow logs enabled at the instance level if flow-level diagnosis is needed
   (the skill will tell you if it isn't)
 - For CCP/call-quality diagnosis: be ready to share browser dev tools output or network
@@ -114,10 +161,12 @@ To make this skill available to your AWS DevOps Agent:
    ```bash
    zip -r amazon-connect-ops-review-troubleshooting-guide.zip . \
      -x '.git/*' '.gitignore' '.gitallowed' \
-        'CHANGELOG.md' '.skilleval.yaml' 'evals/*' 'CONTRIBUTING.md' 'CODE_OF_CONDUCT.md'
+        'CHANGELOG.md' '.skilleval.yaml' 'evals/*' 'CONTRIBUTING.md' 'CODE_OF_CONDUCT.md' \
+        '*/__pycache__/*' '*.DS_Store'
    ```
 
-   The runtime package is just `SKILL.md` + `references/`. `.skilleval.yaml` and `evals/`
+   The runtime package is `SKILL.md` + `references/` + `scripts/`. If your agent can't
+   execute Python, Region Readiness falls back to `references/region-readiness-matrix.md`. `.skilleval.yaml` and `evals/`
    are test assets (skill-eval definitions); `CHANGELOG.md` and the git files are
    repo hygiene. This skill is platform-agnostic — any AI tool with AWS CLI/SDK access can
    load `SKILL.md` and pull in `references/` on demand; the steps below cover the AWS

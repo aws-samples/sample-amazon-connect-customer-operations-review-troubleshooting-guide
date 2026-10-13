@@ -1,38 +1,89 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
-description: "Amazon Connect Operations Review and troubleshooting guide covering full Well-Architected assessment across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI), plus self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
+description: "Amazon Connect Well-Architected Toolkit — a multi-module toolkit for Amazon Connect covering: (1) a full Well-Architected operations review across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); (2) troubleshooting with self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification; and (3) a Region Readiness module that tells customers — before they build — which AWS Region can deliver the Connect features, phone numbers, outbound campaign destinations, and Global Resiliency pairing they need. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
   author: "aws-samples"
   aws-services: "Amazon Connect"
   technical-domains: "Contact Center, Telephony, GenAI"
 ---
 
-# Amazon Connect Operations Review & Troubleshooting Guide
+# Amazon Connect Well-Architected Toolkit
+
+> Formerly titled "Amazon Connect Operations Review & Troubleshooting Guide." The display name changed in 1.4.0; the skill identifier (`amazon-connect-ops-review-troubleshooting-guide`) and repository name are unchanged.
+
+## START HERE — Module selection gate (mandatory, before anything else)
+
+When this skill is invoked, your FIRST action is to present the module menu below and WAIT for the user's choice. Do this on every fresh invocation, even if the user's opening message already named or implied a mode — confirm the number before running anything. Do not discover instances, fetch pages, read other reference files, or produce findings until the user has chosen.
+
+Present exactly this menu:
+
+```
+Which module would you like to run?
+
+  1. Review           — Well-Architected operations review across all 7 pillars
+                        (Operational Excellence, Security, Reliability, Performance,
+                        Cost, Sustainability, GenAI). Needs read-only AWS access.
+
+  2. Troubleshoot     — Diagnose a finding ID or a symptom, verify it, and propose a
+                        fix (read-only by default). Needs read-only AWS access.
+
+  3. Region Readiness — Which AWS Region supports the features, phone numbers, outbound
+                        campaign destinations, and DR pairing you need — before you build.
+                        No AWS account access required.
+
+Reply with 1, 2, or 3.
+```
+
+Selection rules:
+- Run ONLY the module the user selects. Ignore the other two entirely — do not load their reference files, run their checks, or mix in their findings.
+- Map the reply: **1 → Review**, **2 → Troubleshoot**, **3 → Region Readiness**. Accept the number or the module name.
+- If the reply is ambiguous or invalid, re-present the menu and ask again. Do not guess.
+- If the user's opening message already contains a clear request for one module, still show the menu but you MAY note the implied choice (e.g. "Looks like you want option 2 — confirm with 2 to proceed."). Proceed only after they confirm.
+- The one documented cross-module exception stays intact: a **Review (option 1)** still runs the Region Readiness cross-check on each discovered instance as part of its own flow. That is Review doing its job — it is not a reason to skip this gate or to run option 3 separately.
+- Once a module is chosen and running, stay in it. If the user later wants a different module, return to this menu.
+
+After the user chooses, jump to that module's starting point:
+- **1 — Review** → Investigation Workflow, Step 1 (below)
+- **2 — Troubleshoot** → Runbook Category Index (below)
+- **3 — Region Readiness** → `references/region-readiness.md`
+
+### Example prompts (share with users as starting points)
+
+**1 — Review**
+- "Run a full Well-Architected operations review on my Connect instance `my-instance` in us-east-1 (read-only)."
+- "Review just the Security and Reliability pillars for all Connect instances in eu-west-2."
+- "Discover the Connect instances in my account and do a health check on the production one."
+
+**2 — Troubleshoot**
+- "Agents report choppy, one-way audio on ~20% of calls since this morning — help me diagnose."
+- "How do I fix finding SEC-001 (HTTP approved origin) on my instance?"
+- "Check whether my ACGR primary and replica are in sync and what to look for in CloudTrail."
+
+**3 — Region Readiness**
+- "Can I run outbound campaigns to Canada from an instance in Australia?"
+- "I need Norway phone numbers used as custom caller ID — which Region should I build in?"
+- "We need Contact Lens, outbound campaigns to the UK, and cross-Region DR — which single Region fits?"
+
+---
+
+## Modes
+
+| Mode | Use it for | Needs AWS access? | Start at |
+|---|---|---|---|
+| **Review** | Well-Architected operations review across 7 pillars | Yes (read-only) | Investigation Workflow, Step 1 |
+| **Troubleshoot** | A finding ID or a symptom → diagnose, verify, propose fix | Yes (read-only by default) | Runbook Category Index |
+| **Region Readiness** | Which Region supports the features, numbers, campaign destinations, and DR pairing a customer needs — before they build | **No** (fetches live AWS pages when web access is available, bundled snapshot otherwise) | `references/region-readiness.md` |
+
+The module is chosen via the selection gate above. A single engagement runs one module at a time; the only cross-module behavior is that a Review (option 1) includes the Region Readiness cross-check on each discovered instance.
 
 ## When to Use
 
-**Operations Review:**
-- User asks for an operations review, health check, or Well-Architected review of Amazon Connect
-- User wants to assess one or more specific pillars (e.g., "review my security posture", "check reliability")
-- User wants a full review across all 7 pillars
-- User wants to discover and classify Connect instances across regions
-
-**Troubleshooting & Remediation:**
-- User has findings from an Amazon Connect Operations Review and wants to fix them
-- User asks how to resolve a specific finding ID (e.g., "fix SEC-001", "remediate REL-001")
-- User wants to troubleshoot a Connect issue (logging gaps, alarm failures, DR readiness, ACGR sync)
-- User asks for CLI commands to implement a specific fix
-- User wants to verify a fix was applied correctly
-- User needs a rollback procedure before making changes
-- User asks "what should I fix first?" — provide prioritized remediation plan
-- User reports call quality issues (choppy audio, dropped calls, one-way audio, etc.)
-- User wants to check if ACGR is synced between primary and replica instances
-- Any Connect issue where symptoms aren't yet mapped to a specific finding
+Pick the module via the selection gate above; the Example prompts show typical triggers for each. In short: **Review** for an operations/health/Well-Architected assessment (one pillar, several, or all 7, with instance discovery); **Troubleshoot** for a symptom, a finding ID to fix, a fix/rollback/verification, call-quality issues, or ACGR sync checks; **Region Readiness** for which Region supports a feature / number / campaign destination / DR pairing, or any Region-shaped failure, before building.
 
 **Note on scope:** By default, all of the above is read-only diagnosis and reporting. See `references/global-rules.md` ("Read-Only by Default" and "Two-Gate Confirmation Sequence for Any Write") — no fix is applied unless the customer explicitly asks for that specific fix AND then confirms the agent's concrete change proposal.
 
-**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see `references/call_quality_playbook.md` ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence.
+**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see `references/call_quality_playbook.md` ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence. A standalone Region Readiness run for a contact center that isn't live yet has no calls to ask about, so D0 doesn't apply there. It does apply as soon as the run touches an existing instance.
 
 **Note on runbook cross-referencing:** An operations review does NOT end at producing pillar findings. Every finding surfaced by Step 3's pillar assessments — not just ones the customer explicitly names — MUST be routed through its matching Runbook Category for Diagnose/Verify treatment before the Step 4 report is produced. See Step 3 below.
 
@@ -92,29 +143,21 @@ aws logs filter-log-events --log-group-name /aws/connect/<instance-id> --filter-
 
 If the instance itself is unreachable (`AccessDeniedException` on `ListInstances`/`DescribeInstance`), that IS the root cause domain — stop and report it rather than chasing downstream symptoms.
 
-### Step 3 — Run Pillar Assessments, Then Cross-Reference EVERY Finding to a Runbook
+### Step 3 — Pillar Assessments + Cross-Reference EVERY Finding to a Runbook
 
-## Step 3 — Pillar-Scoped Execution
+**Deep-dive is mandatory. A List/summary-only pass is an INCOMPLETE pillar, not a done one.** For every in-scope check:
+- Run the full call sequence: `List*` → the per-item `Describe*`/`Get*` tier (honor the pillar's own sampling caps, e.g. "up to 20 flows" — sampling within a check is fine; skipping the Describe/Get tier is not).
+- Never report a List-level status as a finding without its Describe/Get confirmation (e.g. a guardrail "ACTIVE" in a list may have no published version — verify).
+- A check is "done" only when its Describe/Get calls ran OR are recorded as `[Not checked — reason]`. No silent downgrade to List-only.
+- The per-pillar second-budgets are effort hints, NOT licence to skip the Describe/Get tier. If a run is cut short, mark checks `[Not checked — reason]`; do not pass them off as clean.
 
 Before executing any API calls, determine the requested pillar scope:
 
-- If the customer names specific pillar(s) (e.g., "run a security review"), 
-  execute ONLY the API calls filed under those pillar(s)' sections in 
-  references/api-surface.md, using each named pillar's connect-pillar-N-*.md 
-  file for the authoritative Check sequence. Do NOT execute calls filed 
-  exclusively under out-of-scope pillars.
+- If the customer names specific pillar(s), execute ONLY the API calls filed under those pillar(s)' sections in `references/api-surface.md`, using each named pillar's `connect-pillar-N-*.md` for the authoritative Check sequence. Do NOT execute calls filed exclusively under out-of-scope pillars.
+- If the customer requests ALL pillars or a general/full review, execute the full catalog across all 7 pillar sections.
+- An API filed under multiple pillars (e.g. ListLambdaFunctions) is executed once per in-scope pillar that references it — each applies its own Describe/Get follow-up and interpretive lens.
 
-- If the customer requests ALL pillars or a general/full operations review, 
-  execute the full catalog across all 7 pillar sections.
-
-- An API filed under multiple pillar sections (e.g., ListLambdaFunctions under 
-  Security, Reliability, and Performance) is executed once per in-scope pillar 
-  that references it — each applies its own Describe/Get-level follow-up and 
-  interpretive lens against the shared result.
-
-references/api-surface.md is consulted per pillar for context on the full 
-catalog; the pillar file's own numbered Checks remain authoritative on any 
-conflict.
+`references/api-surface.md` gives catalog context per pillar; the pillar file's own numbered Checks are authoritative on any conflict.
 
 
 For a full or partial **operations review**, load and execute only the selected pillar files:
@@ -132,11 +175,11 @@ For a full or partial **operations review**, load and execute only the selected 
 **Cross-check pillar coverage against `references/waf-pillar-checks.md`** before treating a pillar pass as complete — it holds the full Well-Architected checklist per pillar. If a pillar file's checks don't cover an item listed there for the pillars in scope, note the gap explicitly in that pillar's findings rather than silently skipping it.
 
 **Mandatory follow-on step — do not treat as optional or as a separate path from the review:** once pillar assessments produce findings, loop through **every single finding, regardless of severity**, and:
-1. Map it to its Runbook Category (A–H) using the Runbook Category Index below or the finding's pillar-file "Fix" reference
+1. Map it to its Runbook Category (A–H, R) using the Runbook Category Index below or the finding's pillar-file "Fix" reference
 2. Load the matching reference file and run that finding's Diagnose step (re-confirm/deepen the finding with the specific runbook procedure — not just the pillar check that first surfaced it)
 3. Run the Verify step to confirm the diagnosis is reproducible
 4. Do NOT run the Fix step — this cross-reference pass is diagnostic only
-5. If a finding truly has no matching category (rare — most map to A–H), route it to Category Z and note that explicitly rather than dropping it silently
+5. If a finding truly has no matching category (rare — most map to A–H or R), route it to Category Z and note that explicitly rather than dropping it silently
 
 **This applies to a customer-named symptom or finding ID exactly the same way** — the only difference is a customer request starts directly at this step for one finding, while a full review arrives here for all findings produced by Step 3's pillar assessments.
 
@@ -147,6 +190,8 @@ For a full or partial **operations review**, load and execute only the selected 
 Read `references/global-rules.md` before concluding on any finding — it defines the anti-hallucination grounding rules, the read-only-by-default rule, the Two-Gate Confirmation Sequence and Change Proposal format, safety checklist, verification pattern, and timeout/retry policy shared across every pillar and runbook.
 
 ### Step 4 — Report
+
+**Gate:** before writing the report, satisfy the Report Generation Gate in `references/global-rules.md` — every in-scope check's Describe/Get tier ran, or is marked `[Not checked — reason]`. Do not generate the report with any check silently left at List-only.
 
 Produce a report with these sections. This is a content template only — deliver it in whatever output format fits the calling tool (chat message, file, ticket comment, etc.); nothing here requires a specific artifact or storage system.
 
@@ -176,6 +221,7 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | F — Reliability & DR | F1 (REL-001), F2–F6 (REL-009–013) | Traffic Distribution Group / DR, ACGR sync configuration and failure recovery | `references/acgr-sync-operations.md` |
 | G — Cost | G1 (COST-004), G2 (COST-003) | S3 lifecycle policy, cost spike investigation | `references/troubleshooting-guide.md` |
 | H — Metrics & Session Policy | H1 (Metrics Blocker), H2 (PERF-003) | Session policy / elevated role blocking real-time metrics, Contact Lens test rule in production | `references/troubleshooting-guide.md`, `references/iam-permission-errors.md` |
+| R — Region Readiness | R1 (REG-001–013) | Feature, telephony, campaign-destination, Global Resiliency, and latency fit of a Region | `references/region-readiness.md` |
 | Z — Catch-All | Z1 | Symptom or finding not mapped to any category above — do NOT silently drop it, diagnose it under Z1 and note the gap | This file |
 
 **Note:** Findings from pillars 1–7 that don't yet have a dedicated pattern in `troubleshooting-guide.md`, `call_quality_playbook.md`, `acgr-sync-operations.md`, or `iam-permission-errors.md` (e.g., a Sustainability or Cost finding without an existing numbered pattern) still route to Category Z: re-run the pillar's own Diagnose-equivalent check as the runbook Diagnose step, and note "no dedicated runbook pattern exists yet for this finding type" rather than omitting it from the Troubleshooting Guide report section.
@@ -199,6 +245,12 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | ACGR: changes not synced to replica | F3 (REL-011) |
 | ACGR: need to enable replication | F2 (REL-009) |
 | ACGR: sync service not active | F6 (REL-013) |
+| Feature missing from the console / API in this Region | R1 |
+| Can't claim a phone number for a country | R1 |
+| Outbound campaign calls fail to a country | R1 |
+| Outbound calls to a country blocked | R1 (REG-006) |
+| Can't create an ACGR replica in the chosen Region | R1 (REG-008) |
+| "Which Region should we use?" | R1 |
 
 ---
 
@@ -241,6 +293,8 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - Agents must be in "Available" status to receive contacts. Custom "Routable" statuses do NOT route contacts unless explicitly configured.
 - CCP (Contact Control Panel) requires WebRTC — outbound UDP port 3478 (SEND/RECEIVE) for media/TURN, plus TCP 443 for signalling/HTTPS, with `*.connect.aws`/`*.transport.connect.aws` domains allow-listed. Media flows over UDP 3478; there is no documented TCP 443 media/TURN fallback. Corporate firewalls, VPN split-tunneling, and SSL inspection commonly break CCP connectivity.
 - Phone numbers are region-specific — a number claimed in one region cannot be used by an instance in another region.
+- Region availability differs per feature, per phone-number country/type, and per outbound campaign destination. Never answer "is X available in Region Y" from memory — the Region Readiness mode (`references/region-readiness.md`) fetches the decisive live AWS page by default (falling back to the bundled snapshot when web access is unavailable) and cites the source and date it used.
+- Outbound campaign destinations are fixed by the instance's home Region (e.g. no campaign calls from Europe (London) to US numbers), and Global Resiliency replicas exist only for three Region pairings (`us-east-1`↔`us-west-2`, `eu-central-1`↔`eu-west-2`, `ap-northeast-1`→`ap-northeast-3`).
 - Contact records (formerly "contact trace records"/CTRs) are delivered at least once and may be delivered again when new information arrives (e.g. after update-contact-attributes); there is no documented fixed 24-hour delivery window. Each record is available for 24 months from contact initiation. Use Kinesis streaming for near-real-time delivery.
 - `wisdom:*` (Q in Connect, AI Agents, AI Guardrails, AI Prompts) is a completely separate IAM namespace from `connect:*`. The `connect:*` wildcard grants zero `wisdom:` access.
 - ACGR (Amazon Connect Global Resiliency) requires SAML identity management — it cannot be enabled on `CONNECT_MANAGED` instances.
@@ -283,3 +337,7 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - `references/iam-permission-errors.md` — Category C4/H1: IAM error disambiguation
 - `references/waf-pillar-checks.md` — Well-Architected Framework pillar checklist. Consulted in Step 3 to verify pillar-check coverage before a pillar pass is treated as complete.
 - `references/api-surface.md` — Complete API catalog. Consulted in Step 3 and the Tool Quick Reference as the fallback when a needed AWS API isn't in the curated shortlist.
+- `references/region-readiness.md` — Region Readiness mode: requirements intake, evaluation, interpretation, report template, existing-instance hook, manual rules, REG-001–013 catalog
+- `references/region-readiness-matrix.md` — Generated, human-readable Region matrix (features, campaign destinations, default outbound countries, per-country telephony). Use when code execution isn't available.
+- `references/region-data/connect-region-data.json` — Dated **fallback** snapshot of the AWS sources, used when a live fetch isn't possible. Region Readiness fetches live pages first by default (Step R0).
+- `scripts/region_readiness.py` — Deterministic Region Readiness evaluator over the fallback snapshot (stdlib Python, no AWS access). `scripts/build_region_data.py` is a maintainer tool that refreshes the snapshot — automate it on a schedule (monthly cron/CI) so the fallback never goes stale; customers never run it.

@@ -3,6 +3,67 @@
 All notable changes to this skill are documented here. Versions are tagged in git
 (`v1.0.0`, `v1.1.0`, …) so any release can be checked out or reverted directly.
 
+## [1.4.0] - 2026-10-06
+### Added
+- **Region Readiness mode.** A self-service, pre-build check of which Amazon Connect home
+  Region can deliver a customer's features, phone numbers, outbound/campaign destinations,
+  agent locations, and Global Resiliency pairing. It needs no AWS account access.
+  - `references/region-readiness.md` — mode procedure (R0 snapshot check → R1 intake →
+    R2 evaluate → R3 interpret → R4 optional read-only live check → R5 report), an
+    existing-instance hook for Operations Reviews, manual rules for agents that can't run
+    code, and the `REG-001`–`REG-013` finding catalog.
+  - `scripts/region_readiness.py` — deterministic evaluator (stdlib Python). It produces a
+    per-Region verdict, findings with source URLs, a ranked scorecard, a single-Region or
+    multi-instance recommendation, and a separate list of design blockers that no Region fixes.
+  - `references/region-data/connect-region-data.json` — dated snapshot built from the
+    Supported Regions page, the Telecoms Coverage Guide PDF (last updated 1 Oct 2026), the
+    phone-number requirements page, the default outbound allow-list page, the Global
+    Resiliency replica/requirements pages, the low-latency design page, the Region-selection
+    and single-vs-multi-instance architecture guidance, and the supported-languages page.
+  - `references/region-readiness-matrix.md` — generated, human-readable copy of the snapshot.
+  - `scripts/build_region_data.py` — maintainer refresh tool. Integrity checks: every
+    green/yellow/red mark in the PDF (866/12/988) must be parsed exactly once, and every
+    quoted AWS sentence must still appear on its page. Anything else goes to `parse_warnings`.
+- Runbook Category **R — Region Readiness** and symptom-lookup rows ("can't claim a number",
+  "campaign calls fail to a country", "can't create a replica", "which Region?").
+- Operations Review now cross-checks each discovered instance's Region against its
+  retrieved configuration (numbers, Contact Lens, campaigns, Cases, agent assist, TDGs).
+- Grounding rule 6 (`global-rules.md`): Region facts come only from the cited snapshot or a
+  live fetch made this session, never from memory.
+- Evals: 4 functional evals (campaign destinations, Global Resiliency pairs, South Africa
+  recommendation, no-memory UNKNOWN), 4 positive and 1 negative trigger query, and a
+  `region-requirements-za.json` fixture. The Telecoms guide domain was added to `.skilleval.yaml`
+  `safe_domains`.
+- **Module selection gate** in `SKILL.md`: on invocation the skill presents a 1/2/3 menu
+  (Review | Troubleshoot | Region Readiness) and runs only the chosen module, confirming
+  even when the opening message implies one. The Review→Region-Readiness cross-check is
+  preserved as the one documented cross-module exception.
+- **Example prompts** — three per module in `SKILL.md` as user starting points.
+- **Live-first Region Readiness.** The mode now fetches the decisive live AWS page per
+  question by default and falls back to the bundled snapshot only when a fetch isn't
+  possible, citing which source it used. The Amazon Connect pricing page was added as a
+  reference source. `region_readiness.py` stamps its output as snapshot-based (offline
+  fallback) so a direct script run is never mistaken for live data.
+- **Mandatory deep-dive** for operations reviews: every in-scope check runs its
+  `List*`→`Describe*`/`Get*` tier (sampling within a check allowed; skipping the Get tier
+  is not), nothing is reported from a List-level status alone, and the Step 4 report is
+  gated on the Report Generation Gate — uncompleted checks are marked `[Not checked]`,
+  never silently downgraded.
+### Changed
+- `SKILL.md` retitled **Amazon Connect Well-Architected Toolkit** (display name and
+  description); the skill identifier and repository name are unchanged for this release.
+- `SKILL.md`: new Modes table (Review | Troubleshoot | Region Readiness), When-to-Use triggers,
+  Region gotchas, reference list. The frontmatter description now covers Region Readiness.
+- Call Quality Intake (D0) doesn't apply to a standalone Region Readiness run for a contact
+  center that isn't live yet. It applies as soon as the run touches an existing instance.
+- README packaging: the runtime package now includes `scripts/`.
+### Notes
+- Source discrepancies are surfaced as `REG-011` rather than resolved silently. Example: the
+  phone-number requirements page excludes Africa (Cape Town) and GovCloud by default, but
+  the Telecoms guide lists "All commercial regions" for most countries.
+- Not evaluated per Region: language/locale support, and the Email channel (absent from
+  the Supported Regions page). Both are reported as "Not evaluated" / `UNKNOWN`.
+
 ## [1.3.0] - 2026-09-21
 ### Fixed
 Accuracy corrections from a verification test against the live Connect API, the AWS CLI

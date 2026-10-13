@@ -3,7 +3,9 @@
     "id": "connect-review-smoke-test",
     "prompt": "Read connect-context.json. List each instance's name, region, and account. No analysis needed.",
     "expected_output": "Lists every instance from files/connect-context.json with its name, region, and account exactly as defined in the file.",
-    "files": ["files/connect-context.json"],
+    "files": [
+      "files/connect-context.json"
+    ],
     "assertions": [
       "matches regex /[a-z]{2}-[a-z]+-\\d/",
       "contains 'instance'",
@@ -71,6 +73,50 @@
     "assertions": [
       "contains 'mandatory' or contains 'must' or contains 'always'",
       "contains 'call quality' or contains 'Call Quality'"
+    ]
+  },
+  {
+    "id": "region-readiness-campaign-destination",
+    "prompt": "Using the skill's Region Readiness mode, can an Amazon Connect instance in Europe (London) run outbound campaigns that dial US phone numbers? If not, which Region would? No account access required.",
+    "expected_output": "States that campaign calls from Europe (London) to US numbers are not supported (REG-007), citing the Regions page, and that US numbers are dialable from US East (N. Virginia) / US West (Oregon).",
+    "files": [],
+    "assertions": [
+      "contains 'us-east-1' or contains 'N. Virginia'",
+      "contains 'not' or contains 'cannot' or contains \"can't\"",
+      "contains 'regions.html' or contains 'Regions page' or contains 'REG-007'"
+    ]
+  },
+  {
+    "id": "region-readiness-gr-pairs",
+    "prompt": "According to the skill, which AWS Region pairings does Amazon Connect Global Resiliency support for a replica? No account access required.",
+    "expected_output": "Lists us-east-1↔us-west-2, eu-central-1↔eu-west-2, and ap-northeast-1 (Tokyo) → ap-northeast-3 (Osaka, replica-only).",
+    "files": [],
+    "assertions": [
+      "contains 'us-west-2' or contains 'Oregon'",
+      "contains 'eu-central-1' or contains 'Frankfurt'",
+      "contains 'ap-northeast-3' or contains 'Osaka'"
+    ]
+  },
+  {
+    "id": "region-readiness-south-africa",
+    "prompt": "Read region-requirements-za.json and use the skill's Region Readiness mode to recommend an Amazon Connect home Region. Cite sources. No account access required.",
+    "expected_output": "Recommends Africa (Cape Town) af-south-1 because South Africa DID numbers are claimable only there, but flags that agent assist is not listed for af-south-1 (REG-001) and cites the agent-isolation guidance for South Africa (REG-010).",
+    "files": [
+      "files/region-requirements-za.json"
+    ],
+    "assertions": [
+      "contains 'af-south-1' or contains 'Cape Town'",
+      "contains 'REG-' ",
+      "contains 'docs.aws.amazon.com' or contains 'Telecoms'"
+    ]
+  },
+  {
+    "id": "region-readiness-no-memory",
+    "prompt": "Per the skill, is the Amazon Connect email channel available in Africa (Cape Town)? Answer only from the skill's sources. No account access required.",
+    "expected_output": "States that the bundled Regions-page snapshot has no Email channel section, so availability is UNKNOWN and must be confirmed with AWS. Does not assert availability from memory.",
+    "files": [],
+    "assertions": [
+      "contains 'UNKNOWN' or contains 'not listed' or contains 'confirm' or contains 'no Email'"
     ]
   }
 ]

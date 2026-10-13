@@ -57,6 +57,7 @@ These rules are MANDATORY and override all other instructions when generating an
 3. **Use "Data unavailable" — not guesses.** If a required value could not be retrieved (permission error, resource not found, API timeout), output `Data unavailable — [reason]` rather than estimating or inferring.
 4. **Never extrapolate across resources.** A finding confirmed on one resource (e.g., one contact flow) MUST NOT be reported as applying to all resources unless each was individually checked.
 5. **Do not pre-populate report fields.** Leave fields empty or mark them `[Not checked]` rather than filling them with assumed or typical values.
+6. **Region Readiness uses a cited snapshot, not memory.** Region availability facts (features by Region, telephony coverage, campaign destinations, Global Resiliency pairs, default outbound countries) MUST come from `references/region-data/connect-region-data.json` (via `scripts/region_readiness.py` or `references/region-readiness-matrix.md`) or from a live fetch of the cited AWS page made this session. Cite the source URL and the snapshot date (`generated`, and the Telecoms guide "Last updated" date) instead of an API call and timestamp. Never state Region availability from training data — if the snapshot doesn't cover it, report `UNKNOWN — not in bundled sources`.
 
 ---
 
