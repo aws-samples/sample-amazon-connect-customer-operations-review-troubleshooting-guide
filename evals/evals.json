@@ -1,122 +1,396 @@
-[
-  {
-    "id": "connect-review-smoke-test",
-    "prompt": "Read connect-context.json. List each instance's name, region, and account. No analysis needed.",
-    "expected_output": "Lists every instance from files/connect-context.json with its name, region, and account exactly as defined in the file.",
-    "files": [
-      "files/connect-context.json"
-    ],
-    "assertions": [
-      "matches regex /[a-z]{2}-[a-z]+-\\d/",
-      "contains 'instance'",
-      "contains 'region'",
-      "contains 'account'"
-    ]
-  },
-  {
-    "id": "connect-review-report-structure",
-    "prompt": "According to the skill, what sections does the Step 4 operations review report contain? List them. No account access required.",
-    "expected_output": "Lists the report sections: Executive Summary, Scoping Summary, Discovery Table, Findings, Troubleshooting Guide, Call Quality Section, and Prioritized Remediation Plan.",
-    "files": [],
-    "assertions": [
-      "contains 'Executive Summary' or contains 'executive summary'",
-      "contains 'Findings' or contains 'findings'",
-      "contains 'Troubleshooting' or contains 'troubleshooting'",
-      "contains 'Call Quality' or contains 'call quality'",
-      "contains 'Remediation' or contains 'remediation'"
-    ]
-  },
-  {
-    "id": "connect-review-data-source-and-readonly",
-    "prompt": "According to the skill, which AWS APIs does the Connect operations review use to collect data? Name at least three specific calls. Confirm whether the skill applies any fix or makes changes without explicit confirmation. No account access required.",
-    "expected_output": "Names specific read calls such as connect:describe-instance, connect:list-approved-origins, connect:get-current-metric-data, or cloudwatch:describe-alarms, and states the skill is read-only by default — no mutating call is issued without the Two-Gate Confirmation Sequence.",
-    "files": [],
-    "assertions": [
-      "contains 'connect' or contains 'Connect'",
-      "contains 'describe' or contains 'list' or contains 'get'",
-      "contains 'read-only' or contains 'read only'",
-      "contains 'confirm' or contains 'Gate' or contains 'two-gate'"
-    ]
-  },
-  {
-    "id": "connect-review-severity-definitions",
-    "prompt": "List the severity levels the skill uses for findings, from most to least urgent. No account access required.",
-    "expected_output": "Lists CRITICAL, HIGH, MEDIUM, LOW in that order (INFO where applicable).",
-    "files": [],
-    "assertions": [
-      "contains 'CRITICAL'",
-      "contains 'HIGH'",
-      "contains 'MEDIUM'",
-      "contains 'LOW'"
-    ]
-  },
-  {
-    "id": "connect-review-pillars",
-    "prompt": "List the Well-Architected pillars the skill evaluates during a Connect operations review. No account access required.",
-    "expected_output": "Mentions Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, and Generative AI.",
-    "files": [],
-    "assertions": [
-      "contains 'Operational' or contains 'operational'",
-      "contains 'Security' or contains 'security'",
-      "contains 'Reliability' or contains 'reliability'",
-      "contains 'Performance' or contains 'performance'",
-      "contains 'Cost' or contains 'cost'",
-      "contains 'Sustainability' or contains 'sustainability'",
-      "contains 'Generative' or contains 'GenAI' or contains 'generative'"
-    ]
-  },
-  {
-    "id": "connect-review-call-quality-intake",
-    "prompt": "According to the skill, is asking the customer about call quality optional or mandatory during an operations review? No account access required.",
-    "expected_output": "States the call-quality intake (D0) is mandatory on every pass and must be an explicit question, never inferred from silence.",
-    "files": [],
-    "assertions": [
-      "contains 'mandatory' or contains 'must' or contains 'always'",
-      "contains 'call quality' or contains 'Call Quality'"
-    ]
-  },
-  {
-    "id": "region-readiness-campaign-destination",
-    "prompt": "Using the skill's Region Readiness mode, can an Amazon Connect instance in Europe (London) run outbound campaigns that dial US phone numbers? If not, which Region would? No account access required.",
-    "expected_output": "States that campaign calls from Europe (London) to US numbers are not supported (REG-007), citing the Regions page, and that US numbers are dialable from US East (N. Virginia) / US West (Oregon).",
-    "files": [],
-    "assertions": [
-      "contains 'us-east-1' or contains 'N. Virginia'",
-      "contains 'not' or contains 'cannot' or contains \"can't\"",
-      "contains 'regions.html' or contains 'Regions page' or contains 'REG-007'"
-    ]
-  },
-  {
-    "id": "region-readiness-gr-pairs",
-    "prompt": "According to the skill, which AWS Region pairings does Amazon Connect Global Resiliency support for a replica? No account access required.",
-    "expected_output": "Lists us-east-1↔us-west-2, eu-central-1↔eu-west-2, and ap-northeast-1 (Tokyo) → ap-northeast-3 (Osaka, replica-only).",
-    "files": [],
-    "assertions": [
-      "contains 'us-west-2' or contains 'Oregon'",
-      "contains 'eu-central-1' or contains 'Frankfurt'",
-      "contains 'ap-northeast-3' or contains 'Osaka'"
-    ]
-  },
-  {
-    "id": "region-readiness-south-africa",
-    "prompt": "Read region-requirements-za.json and use the skill's Region Readiness mode to recommend an Amazon Connect home Region. Cite sources. No account access required.",
-    "expected_output": "Recommends Africa (Cape Town) af-south-1 because South Africa DID numbers are claimable only there, but flags that agent assist is not listed for af-south-1 (REG-001) and cites the agent-isolation guidance for South Africa (REG-010).",
-    "files": [
-      "files/region-requirements-za.json"
-    ],
-    "assertions": [
-      "contains 'af-south-1' or contains 'Cape Town'",
-      "contains 'REG-' ",
-      "contains 'docs.aws.amazon.com' or contains 'Telecoms'"
-    ]
-  },
-  {
-    "id": "region-readiness-no-memory",
-    "prompt": "Per the skill, is the Amazon Connect email channel available in Africa (Cape Town)? Answer only from the skill's sources. No account access required.",
-    "expected_output": "States that the bundled Regions-page snapshot has no Email channel section, so availability is UNKNOWN and must be confirmed with AWS. Does not assert availability from memory.",
-    "files": [],
-    "assertions": [
-      "contains 'UNKNOWN' or contains 'not listed' or contains 'confirm' or contains 'no Email'"
-    ]
-  }
-]
+{
+  "skill_name": "amazon-connect-ops-review-troubleshooting-guide",
+  "evals": [
+    {
+      "id": "connect-review-smoke-test",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Here is the contents of connect-context.json:\n{\n  \"instances\": [\n    { \"type\": \"instance\", \"name\": \"prod-contact-center\", \"instanceId\": \"11111111-1111-1111-1111-111111111111\", \"region\": \"us-east-1\", \"account\": \"$accountId\" },\n    { \"type\": \"instance\", \"name\": \"dev-sandbox\", \"instanceId\": \"22222222-2222-2222-2222-222222222222\", \"region\": \"us-west-2\", \"account\": \"$accountId\" }\n  ]\n}\n\nList each instance's name, region, and account. No analysis needed.",
+      "expected_output": "Lists every instance from connect-context.json with its name, region, and account exactly as defined in the file.",
+      "assertions": [
+        {
+          "text": "A Region code is present",
+          "evaluator": "regex",
+          "pattern": "[a-z]{2}-[a-z]+-\\d"
+        },
+        {
+          "text": "Mentions instance",
+          "evaluator": "regex",
+          "pattern": "(?i)instance"
+        },
+        {
+          "text": "Mentions region",
+          "evaluator": "regex",
+          "pattern": "(?i)region"
+        },
+        {
+          "text": "Mentions account",
+          "evaluator": "regex",
+          "pattern": "(?i)account"
+        },
+        {
+          "text": "Both instance names listed",
+          "evaluator": "regex",
+          "pattern": "prod-contact-center[\\s\\S]*dev-sandbox|dev-sandbox[\\s\\S]*prod-contact-center"
+        }
+      ]
+    },
+    {
+      "id": "connect-review-report-structure",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill, what sections does the Step 4 operations review report contain? List them. No account access required.",
+      "expected_output": "Lists the report sections: Executive Summary, Scoping Summary, Discovery Table, Findings, Troubleshooting Guide, Call Quality Section, and Prioritized Remediation Plan.",
+      "assertions": [
+        {
+          "text": "Executive Summary section",
+          "evaluator": "regex",
+          "pattern": "(?i)executive summary"
+        },
+        {
+          "text": "Findings section",
+          "evaluator": "regex",
+          "pattern": "(?i)findings"
+        },
+        {
+          "text": "Troubleshooting section",
+          "evaluator": "regex",
+          "pattern": "(?i)troubleshooting"
+        },
+        {
+          "text": "Call Quality section",
+          "evaluator": "regex",
+          "pattern": "(?i)call quality"
+        },
+        {
+          "text": "Remediation section",
+          "evaluator": "regex",
+          "pattern": "(?i)remediation"
+        }
+      ]
+    },
+    {
+      "id": "connect-review-data-source-and-readonly",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill, which AWS APIs does the Connect operations review use to collect data? Name at least three specific calls. Confirm whether the skill applies any fix or makes changes without explicit confirmation. No account access required.",
+      "expected_output": "Names specific read calls such as connect:describe-instance, connect:list-approved-origins, connect:get-current-metric-data, or cloudwatch:describe-alarms, and states the skill is read-only by default — no mutating call is issued without the Two-Gate Confirmation Sequence.",
+      "assertions": [
+        {
+          "text": "Mentions Connect",
+          "evaluator": "regex",
+          "pattern": "(?i)connect"
+        },
+        {
+          "text": "Names a describe/list/get call",
+          "evaluator": "regex",
+          "pattern": "(?i)describe|list|get"
+        },
+        {
+          "text": "States read-only",
+          "evaluator": "regex",
+          "pattern": "(?i)read-only|read only"
+        },
+        {
+          "text": "Mentions confirmation gate",
+          "evaluator": "regex",
+          "pattern": "(?i)confirm|two-gate|gate"
+        }
+      ]
+    },
+    {
+      "id": "connect-review-severity-definitions",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "List the severity levels the skill uses for findings, from most to least urgent. No account access required.",
+      "expected_output": "Lists CRITICAL, HIGH, MEDIUM, LOW in that order (INFO where applicable).",
+      "assertions": [
+        {
+          "text": "CRITICAL listed",
+          "evaluator": "regex",
+          "pattern": "CRITICAL"
+        },
+        {
+          "text": "HIGH listed",
+          "evaluator": "regex",
+          "pattern": "HIGH"
+        },
+        {
+          "text": "MEDIUM listed",
+          "evaluator": "regex",
+          "pattern": "MEDIUM"
+        },
+        {
+          "text": "LOW listed",
+          "evaluator": "regex",
+          "pattern": "LOW"
+        },
+        {
+          "text": "Severities in order",
+          "evaluator": "regex",
+          "pattern": "CRITICAL[\\s\\S]*HIGH[\\s\\S]*MEDIUM[\\s\\S]*LOW"
+        }
+      ]
+    },
+    {
+      "id": "connect-review-pillars",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "List the Well-Architected pillars the skill evaluates during a Connect operations review. No account access required.",
+      "expected_output": "Mentions Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, and Generative AI.",
+      "assertions": [
+        {
+          "text": "Operational Excellence",
+          "evaluator": "regex",
+          "pattern": "(?i)operational"
+        },
+        {
+          "text": "Security",
+          "evaluator": "regex",
+          "pattern": "(?i)security"
+        },
+        {
+          "text": "Reliability",
+          "evaluator": "regex",
+          "pattern": "(?i)reliability"
+        },
+        {
+          "text": "Performance",
+          "evaluator": "regex",
+          "pattern": "(?i)performance"
+        },
+        {
+          "text": "Cost",
+          "evaluator": "regex",
+          "pattern": "(?i)cost"
+        },
+        {
+          "text": "Sustainability",
+          "evaluator": "regex",
+          "pattern": "(?i)sustainability"
+        },
+        {
+          "text": "Generative AI",
+          "evaluator": "regex",
+          "pattern": "(?i)generative|genai"
+        }
+      ]
+    },
+    {
+      "id": "connect-review-call-quality-intake",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill, is asking the customer about call quality optional or mandatory during an operations review? No account access required.",
+      "expected_output": "States the call-quality intake (D0) is mandatory on every pass and must be an explicit question, never inferred from silence.",
+      "assertions": [
+        {
+          "text": "States it is mandatory",
+          "evaluator": "regex",
+          "pattern": "(?i)mandatory|must|always"
+        },
+        {
+          "text": "Mentions call quality",
+          "evaluator": "regex",
+          "pattern": "(?i)call quality"
+        },
+        "States the call-quality question must be asked explicitly and never inferred from silence"
+      ]
+    },
+    {
+      "id": "region-readiness-campaign-destination",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Using the skill's Region Readiness mode, can an Amazon Connect instance in Europe (London) run outbound campaigns that dial US phone numbers? If not, which Region would? No account access required.",
+      "expected_output": "States that campaign calls from Europe (London) to US numbers are not supported (REG-007), citing the Regions page, and that US numbers are dialable from US East (N. Virginia) / US West (Oregon).",
+      "assertions": [
+        {
+          "text": "Names US East (N. Virginia)",
+          "evaluator": "regex",
+          "pattern": "us-east-1|N\\. Virginia"
+        },
+        {
+          "text": "States it is not supported",
+          "evaluator": "regex",
+          "pattern": "(?i)\\bnot\\b|cannot|can't"
+        },
+        {
+          "text": "Cites the Regions page or REG-007",
+          "evaluator": "regex",
+          "pattern": "regions\\.html|Regions page|REG-007"
+        }
+      ]
+    },
+    {
+      "id": "region-readiness-gr-pairs",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill, which AWS Region pairings does Amazon Connect Global Resiliency support for a replica? No account access required.",
+      "expected_output": "Lists us-east-1↔us-west-2, eu-central-1↔eu-west-2, and ap-northeast-1 (Tokyo) → ap-northeast-3 (Osaka, replica-only).",
+      "assertions": [
+        {
+          "text": "us-west-2 / Oregon",
+          "evaluator": "regex",
+          "pattern": "us-west-2|Oregon"
+        },
+        {
+          "text": "eu-central-1 / Frankfurt",
+          "evaluator": "regex",
+          "pattern": "eu-central-1|Frankfurt"
+        },
+        {
+          "text": "ap-northeast-3 / Osaka",
+          "evaluator": "regex",
+          "pattern": "ap-northeast-3|Osaka"
+        }
+      ]
+    },
+    {
+      "id": "region-readiness-south-africa",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Here are my requirements (region-requirements-za.json):\n{\n  \"features\": [\"conversational_analytics.post_call_analytics\", \"agent_assist\"],\n  \"phone_numbers\": [{\"country\": \"ZA\", \"type\": \"DID\", \"needs\": [\"inbound\", \"national_outbound\"]}],\n  \"agent_countries\": [\"ZA\"]\n}\n\nUse the skill's Region Readiness mode to recommend an Amazon Connect home Region. Cite sources. No account access required.",
+      "expected_output": "Recommends Africa (Cape Town) af-south-1 because South Africa DID numbers are claimable only there, but flags that agent assist is not listed for af-south-1 (REG-001) and cites the agent-isolation guidance for South Africa (REG-010).",
+      "assertions": [
+        {
+          "text": "Recommends af-south-1 / Cape Town",
+          "evaluator": "regex",
+          "pattern": "af-south-1|Cape Town"
+        },
+        {
+          "text": "Cites a REG- finding",
+          "evaluator": "regex",
+          "pattern": "REG-\\d{3}"
+        },
+        {
+          "text": "Cites AWS docs or Telecoms guide",
+          "evaluator": "regex",
+          "pattern": "docs\\.aws\\.amazon\\.com|Telecoms"
+        }
+      ]
+    },
+    {
+      "id": "region-readiness-no-memory",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Per the skill, is the Amazon Connect email channel available in Africa (Cape Town)? Answer only from the skill's sources. No account access required.",
+      "expected_output": "States that the bundled Regions-page snapshot has no Email channel section, so availability is UNKNOWN and must be confirmed with AWS. Does not assert availability from memory.",
+      "assertions": [
+        {
+          "text": "Reports unknown / not listed",
+          "evaluator": "regex",
+          "pattern": "(?i)UNKNOWN|not listed|confirm|no Email"
+        },
+        "Does not assert from memory that the email channel is available in af-south-1"
+      ]
+    },
+    {
+      "id": "cost-optimization-number-release",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill's Cost Optimization module, what must be true before recommending a phone-number release, and what happens after a number is released? No account access required.",
+      "expected_output": "States numbers must be confirmed unused by the customer (excluding BYOC/shared-trunking and DR/TDG numbers), that a release enters a cooldown of up to 180 days and is capped at 200% of the phone-number quota per rolling 180 days, and that the skill never performs the release without the Two-Gate Confirmation Sequence.",
+      "assertions": [
+        {
+          "text": "Mentions the 180-day window",
+          "evaluator": "regex",
+          "pattern": "180"
+        },
+        {
+          "text": "Mentions confirmation gate",
+          "evaluator": "regex",
+          "pattern": "(?i)confirm|gate"
+        },
+        {
+          "text": "Cites a CSO- finding",
+          "evaluator": "regex",
+          "pattern": "CSO-\\d{3}"
+        }
+      ]
+    },
+    {
+      "id": "cost-optimization-plan-gate",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Per the skill, does disabling Contact Lens conversational analytics save money on the Connect Customer plan? Should I downgrade from real-time to post-call to save cost? No account access required.",
+      "expected_output": "Explains that on the Connect Customer plan analytics is included in the channel rate so disabling saves nothing; per-feature charges apply only to Customer Basic; there is no real-time vs post-call price difference; if the plan is undetermined the feature levers are Data unavailable.",
+      "assertions": [
+        {
+          "text": "Mentions Customer Basic",
+          "evaluator": "regex",
+          "pattern": "(?i)customer basic"
+        },
+        {
+          "text": "Mentions post-call",
+          "evaluator": "regex",
+          "pattern": "(?i)post-call|post call"
+        },
+        {
+          "text": "Says analytics is included / saves nothing",
+          "evaluator": "regex",
+          "pattern": "(?i)included|no price difference|saves nothing"
+        }
+      ]
+    },
+    {
+      "id": "peak-readiness-verdicts",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "According to the skill's Peak Readiness module, what verdicts can it return and when is a gap a Blocker? No account access required.",
+      "expected_output": "Lists READY, READY WITH ACTIONS, NOT READY; a gap is a Blocker only when it cannot be remediated within the lead time before the event (e.g. quota increases up to ~3 weeks), otherwise Needs Action.",
+      "assertions": [
+        {
+          "text": "READY WITH ACTIONS listed",
+          "evaluator": "regex",
+          "pattern": "READY WITH ACTIONS"
+        },
+        {
+          "text": "NOT READY listed",
+          "evaluator": "regex",
+          "pattern": "NOT READY"
+        },
+        {
+          "text": "Mentions lead time",
+          "evaluator": "regex",
+          "pattern": "(?i)lead time"
+        },
+        "Explains that a gap is a Blocker only when it cannot be remediated within the lead time before the event"
+      ]
+    },
+    {
+      "id": "peak-readiness-concurrency-scale",
+      "task_type": "chat",
+      "should_trigger": true,
+      "prompt": "Per the skill, ConcurrentCallsPercentage peaked at 0.42 over the last 14 days and the event is 2x normal volume. What is the projected fraction, how is it classified, and what threshold value should an alarm on this metric use? No account access required.",
+      "expected_output": "Projected 0.84 (0.42 x 2), which is >= 0.80 Critical — request a quota increase now (Blocker only if it cannot land before the event); notes concurrency can grow faster than volume; the alarm threshold must be entered as a 0-1 decimal (0.7/0.8), not 70/80.",
+      "assertions": [
+        {
+          "text": "Projected 0.84",
+          "evaluator": "regex",
+          "pattern": "0\\.84"
+        },
+        {
+          "text": "Mentions the 0.8 threshold",
+          "evaluator": "regex",
+          "pattern": "0\\.8\\b"
+        },
+        {
+          "text": "Threshold must be a decimal",
+          "evaluator": "regex",
+          "pattern": "(?i)decimal|not 80|never fires"
+        }
+      ]
+    },
+    {
+      "id": "negative-alb-vs-nlb",
+      "task_type": "chat",
+      "should_trigger": false,
+      "prompt": "What is the difference between an Application Load Balancer and a Network Load Balancer?"
+    },
+    {
+      "id": "negative-s3-lifecycle",
+      "task_type": "chat",
+      "should_trigger": false,
+      "prompt": "How do I write an S3 lifecycle rule that moves objects to Glacier after 90 days?"
+    }
+  ]
+}

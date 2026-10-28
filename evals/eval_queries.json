@@ -48,6 +48,22 @@
     "should_trigger": true
   },
   {
+    "query": "Reduce my Amazon Connect costs and rank the savings",
+    "should_trigger": true
+  },
+  {
+    "query": "Find unused Amazon Connect phone numbers and estimate what releasing them saves",
+    "should_trigger": true
+  },
+  {
+    "query": "Is our Amazon Connect contact center ready for Black Friday call volume?",
+    "should_trigger": true
+  },
+  {
+    "query": "Can Amazon Connect handle 2x our normal peak for an upcoming campaign? Give me a go/no-go",
+    "should_trigger": true
+  },
+  {
     "query": "Write a Python script that sorts a list of numbers",
     "should_trigger": false
   },
@@ -69,6 +85,10 @@
   },
   {
     "query": "Which AWS Region has the cheapest EC2 spot prices?",
+    "should_trigger": false
+  },
+  {
+    "query": "How do I reduce my EC2 bill with Savings Plans?",
     "should_trigger": false
   }
 ]

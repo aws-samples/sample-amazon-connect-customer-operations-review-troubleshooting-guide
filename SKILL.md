@@ -2,7 +2,7 @@
 name: "amazon-connect-ops-review-troubleshooting-guide"
 description: "Amazon Connect Well-Architected Toolkit — a multi-module toolkit for Amazon Connect covering: (1) a full Well-Architected operations review across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); (2) troubleshooting with self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification; and (3) a Region Readiness module that tells customers — before they build — which AWS Region can deliver the Connect features, phone numbers, outbound campaign destinations, and Global Resiliency pairing they need. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
   author: "aws-samples"
   aws-services: "Amazon Connect"
   technical-domains: "Contact Center, Telephony, GenAI"
@@ -32,12 +32,21 @@ Which module would you like to run?
                         campaign destinations, and DR pairing you need — before you build.
                         No AWS account access required.
 
-Reply with 1, 2, or 3.
+  4. Cost Optimization — Decompose the Connect bill and rank savings opportunities
+                        (phone numbers, telephony mix, feature ROI, idle instances,
+                        storage, anomalies) with estimated monthly $ impact.
+                        Needs read-only AWS access incl. Cost Explorer.
+
+  5. Peak Readiness   — Go / no-go gate before a peak event (Black Friday, campaign,
+                        launch): quota headroom, IVR Lambda, resiliency, monitoring,
+                        staffing/routing. Needs read-only AWS access.
+
+Reply with 1, 2, 3, 4, or 5.
 ```
 
 Selection rules:
-- Run ONLY the module the user selects. Ignore the other two entirely — do not load their reference files, run their checks, or mix in their findings.
-- Map the reply: **1 → Review**, **2 → Troubleshoot**, **3 → Region Readiness**. Accept the number or the module name.
+- Run ONLY the module the user selects. Ignore the others entirely — do not load their reference files, run their checks, or mix in their findings.
+- Map the reply: **1 → Review**, **2 → Troubleshoot**, **3 → Region Readiness**, **4 → Cost Optimization**, **5 → Peak Readiness**. Accept the number or the module name.
 - If the reply is ambiguous or invalid, re-present the menu and ask again. Do not guess.
 - If the user's opening message already contains a clear request for one module, still show the menu but you MAY note the implied choice (e.g. "Looks like you want option 2 — confirm with 2 to proceed."). Proceed only after they confirm.
 - The one documented cross-module exception stays intact: a **Review (option 1)** still runs the Region Readiness cross-check on each discovered instance as part of its own flow. That is Review doing its job — it is not a reason to skip this gate or to run option 3 separately.
@@ -47,6 +56,8 @@ After the user chooses, jump to that module's starting point:
 - **1 — Review** → Investigation Workflow, Step 1 (below)
 - **2 — Troubleshoot** → Runbook Category Index (below)
 - **3 — Region Readiness** → `references/region-readiness.md`
+- **4 — Cost Optimization** → `references/cost-optimization.md`
+- **5 — Peak Readiness** → `references/peak-readiness.md`
 
 ### Example prompts (share with users as starting points)
 
@@ -65,6 +76,16 @@ After the user chooses, jump to that module's starting point:
 - "I need Norway phone numbers used as custom caller ID — which Region should I build in?"
 - "We need Contact Lens, outbound campaigns to the UK, and cross-Region DR — which single Region fits?"
 
+**4 — Cost Optimization**
+- "Why is our Amazon Connect bill up 30% this quarter, and where can we cut?"
+- "Find unused phone numbers on `my-instance` and size the savings."
+- "Is Contact Lens worth its cost on our plan?"
+
+**5 — Peak Readiness**
+- "Are we ready for Black Friday at 2x our normal peak on `my-instance` in us-east-1?"
+- "Do we need any quota increases before our product launch on 15 December?"
+- "Give me a go/no-go for a marketing campaign that will triple chat volume."
+
 ---
 
 ## Modes
@@ -74,16 +95,18 @@ After the user chooses, jump to that module's starting point:
 | **Review** | Well-Architected operations review across 7 pillars | Yes (read-only) | Investigation Workflow, Step 1 |
 | **Troubleshoot** | A finding ID or a symptom → diagnose, verify, propose fix | Yes (read-only by default) | Runbook Category Index |
 | **Region Readiness** | Which Region supports the features, numbers, campaign destinations, and DR pairing a customer needs — before they build | **No** (fetches live AWS pages when web access is available, bundled snapshot otherwise) | `references/region-readiness.md` |
+| **Cost Optimization** | Ranked, dollar-sized savings opportunities and spend-anomaly driver analysis (`CSO-xxx`) | Yes (read-only, incl. Cost Explorer — ~$0.01 per request) | `references/cost-optimization.md` |
+| **Peak Readiness** | Go / no-go verdict before a peak event, with a lead-time-ordered action plan (`PEAK-xxx`) | Yes (read-only) | `references/peak-readiness.md` |
 
 The module is chosen via the selection gate above. A single engagement runs one module at a time; the only cross-module behavior is that a Review (option 1) includes the Region Readiness cross-check on each discovered instance.
 
 ## When to Use
 
-Pick the module via the selection gate above; the Example prompts show typical triggers for each. In short: **Review** for an operations/health/Well-Architected assessment (one pillar, several, or all 7, with instance discovery); **Troubleshoot** for a symptom, a finding ID to fix, a fix/rollback/verification, call-quality issues, or ACGR sync checks; **Region Readiness** for which Region supports a feature / number / campaign destination / DR pairing, or any Region-shaped failure, before building.
+Pick the module via the selection gate above; the Example prompts show typical triggers for each. In short: **Review** for an operations/health/Well-Architected assessment (one pillar, several, or all 7, with instance discovery); **Troubleshoot** for a symptom, a finding ID to fix, a fix/rollback/verification, call-quality issues, or ACGR sync checks; **Region Readiness** for which Region supports a feature / number / campaign destination / DR pairing, or any Region-shaped failure, before building; **Cost Optimization** to cut or explain the Connect bill (Pillar 5 of a Review flags cost issues; this module sizes and ranks them); **Peak Readiness** for a pre-event capacity go / no-go.
 
 **Note on scope:** By default, all of the above is read-only diagnosis and reporting. See `references/global-rules.md` ("Read-Only by Default" and "Two-Gate Confirmation Sequence for Any Write") — no fix is applied unless the customer explicitly asks for that specific fix AND then confirms the agent's concrete change proposal.
 
-**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see `references/call_quality_playbook.md` ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence. A standalone Region Readiness run for a contact center that isn't live yet has no calls to ask about, so D0 doesn't apply there. It does apply as soon as the run touches an existing instance.
+**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see `references/call_quality_playbook.md` ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence. A standalone Region Readiness run for a contact center that isn't live yet has no calls to ask about, so D0 doesn't apply there; nor does it apply to a standalone Cost Optimization or Peak Readiness run, whose scope is spend or capacity (Peak Readiness still records agent-site network reachability as PEAK-021). It does apply as soon as the run touches an existing instance.
 
 **Note on runbook cross-referencing:** An operations review does NOT end at producing pillar findings. Every finding surfaced by Step 3's pillar assessments — not just ones the customer explicitly names — MUST be routed through its matching Runbook Category for Diagnose/Verify treatment before the Step 4 report is produced. See Step 3 below.
 
@@ -251,6 +274,8 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | Outbound calls to a country blocked | R1 (REG-006) |
 | Can't create an ACGR replica in the chosen Region | R1 (REG-008) |
 | "Which Region should we use?" | R1 |
+| Rank savings / find unused numbers / is a feature worth it | Cost Optimization module (`references/cost-optimization.md`) |
+| "Are we ready for the peak / can we handle 2x?" | Peak Readiness module (`references/peak-readiness.md`) |
 
 ---
 
@@ -339,5 +364,7 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - `references/api-surface.md` — Complete API catalog. Consulted in Step 3 and the Tool Quick Reference as the fallback when a needed AWS API isn't in the curated shortlist.
 - `references/region-readiness.md` — Region Readiness mode: requirements intake, evaluation, interpretation, report template, existing-instance hook, manual rules, REG-001–013 catalog
 - `references/region-readiness-matrix.md` — Generated, human-readable Region matrix (features, campaign destinations, default outbound countries, per-country telephony). Use when code execution isn't available.
+- `references/cost-optimization.md` — Cost Optimization mode: spend baseline, lever evaluation, quantify-and-rank, report template, CSO-001–019 catalog
+- `references/peak-readiness.md` — Peak Readiness mode: event intake, capacity/quota, dependency, preparedness checks, verdict rules, report template (incl. machine-readable JSON), PEAK-xxx catalog
 - `references/region-data/connect-region-data.json` — Dated **fallback** snapshot of the AWS sources, used when a live fetch isn't possible. Region Readiness fetches live pages first by default (Step R0).
 - `scripts/region_readiness.py` — Deterministic Region Readiness evaluator over the fallback snapshot (stdlib Python, no AWS access). `scripts/build_region_data.py` is a maintainer tool that refreshes the snapshot — automate it on a schedule (monthly cron/CI) so the fallback never goes stale; customers never run it.
