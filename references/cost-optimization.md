@@ -31,6 +31,8 @@ Read-only IAM actions this mode uses: `ce:GetCostAndUsage`, `ce:GetCostForecast`
 
 Cost Explorer data is **account-wide** (management/payer account for consolidated billing), not per instance. If `ce:*` returns `AccessDeniedException`, every spend-based lever is `NOT ASSESSED — ce:GetCostAndUsage denied`; inventory-based levers (CSO-001–003, CSO-015) still run, sized with pricing-page rates and labelled as estimates.
 
+**No account access? Answer rule and policy questions directly.** Many questions about this mode do not need Cost Explorer or any AWS API: how pricing plans affect feature levers (the C3.3 pricing-plan gate — e.g. whether disabling Contact Lens or moving real-time to post-call saves money on the Connect Customer plan vs. Customer Basic), the phone-number release rules (CSO-001–003: confirmation, cooldown, quota cap), how levers are ranked, or what a finding ID means. When the user asks such a question, or says no account access is available, answer from this file and cite the relevant `CSO-xxx` IDs — do not ask for access or stop to resolve the conflict. Only spend sizing (Step C2 baseline, $ impact in Step C4) needs `ce:*` access; if it is unavailable, say so and give the rule-based answer.
+
 ---
 
 ## Step C1 — Scope

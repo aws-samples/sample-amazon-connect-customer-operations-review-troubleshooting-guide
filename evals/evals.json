@@ -311,7 +311,7 @@
       "id": "cost-optimization-plan-gate",
       "task_type": "chat",
       "should_trigger": true,
-      "prompt": "Per the skill, does disabling Contact Lens conversational analytics save money on the Connect Customer plan? Should I downgrade from real-time to post-call to save cost? No account access required.",
+      "prompt": "According to the skill's Cost Optimization module, does disabling Contact Lens conversational analytics save money on the Connect Customer plan? Should I downgrade from real-time to post-call to save cost? No account access required.",
       "expected_output": "Explains that on the Connect Customer plan analytics is included in the channel rate so disabling saves nothing; per-feature charges apply only to Customer Basic; there is no real-time vs post-call price difference; if the plan is undetermined the feature levers are Data unavailable.",
       "assertions": [
         {
@@ -335,7 +335,7 @@
       "id": "peak-readiness-verdicts",
       "task_type": "chat",
       "should_trigger": true,
-      "prompt": "According to the skill's Peak Readiness module, what verdicts can it return and when is a gap a Blocker? No account access required.",
+      "prompt": "According to the skill's Peak Readiness module, what verdicts can it return and when is a gap a Blocker?",
       "expected_output": "Lists READY, READY WITH ACTIONS, NOT READY; a gap is a Blocker only when it cannot be remediated within the lead time before the event (e.g. quota increases up to ~3 weeks), otherwise Needs Action.",
       "assertions": [
         {
@@ -360,7 +360,7 @@
       "id": "peak-readiness-concurrency-scale",
       "task_type": "chat",
       "should_trigger": true,
-      "prompt": "Per the skill, ConcurrentCallsPercentage peaked at 0.42 over the last 14 days and the event is 2x normal volume. What is the projected fraction, how is it classified, and what threshold value should an alarm on this metric use? No account access required.",
+      "prompt": "According to the skill's Peak Readiness module, ConcurrentCallsPercentage peaked at 0.42 over the last 14 days and the event is 2x normal volume. What is the projected fraction, how is it classified, and what threshold value should an alarm on this metric use?",
       "expected_output": "Projected 0.84 (0.42 x 2), which is >= 0.80 Critical — request a quota increase now (Blocker only if it cannot land before the event); notes concurrency can grow faster than volume; the alarm threshold must be entered as a 0-1 decimal (0.7/0.8), not 70/80.",
       "assertions": [
         {

@@ -41,6 +41,8 @@ Read-only IAM actions this mode uses: `connect:ListInstances`, `connect:Describe
 
 `GetCurrentMetricData` / `GetMetricDataV2` are **session-policy sensitive** — an `AccessDenied` there is Runbook Category H1, not "no data".
 
+**No account access? Answer rule and policy questions directly.** Many questions about this mode need no AWS API: the verdicts (READY / READY WITH ACTIONS / NOT READY, Step P5), when a gap is a Blocker versus Needs Action (the lead-time rule), the status vocabulary, the projection and threshold math (e.g. scaling a ConcurrentCallsPercentage peak by the event multiplier, or entering alarm thresholds as 0-1 decimals), and what a `PEAK-xxx` finding ID means. When the user asks such a question, or says no account access is available, answer from this file as the Peak Readiness module — do not ask the user to confirm the module, do not switch to Region Readiness or another module, and do not stop to resolve the access question. Only the live checks in Steps P2-P4 need the actions above; if they are unavailable, say so and give the rule-based answer.
+
 ---
 
 ## Step P1 — Event parameters
