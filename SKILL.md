@@ -1,6 +1,6 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
-description: "Amazon Connect Well-Architected Toolkit — a multi-module toolkit for Amazon Connect covering: (1) a full Well-Architected operations review across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); (2) troubleshooting with self-service remediation for 14 finding patterns including call quality investigation and ACGR sync verification; and (3) a Region Readiness module that tells customers — before they build — which AWS Region can deliver the Connect features, phone numbers, outbound campaign destinations, and Global Resiliency pairing they need. Platform-agnostic — usable by any AI tool with AWS CLI/SDK access, not just this agent. Loads reference files on demand to minimize hallucination risk."
+description: "Use this skill when a user wants to review, troubleshoot, cost-optimize, or plan an Amazon Connect contact center. It runs a Well-Architected operations review across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); troubleshoots a finding ID or symptom, including call quality and ACGR sync, with self-service remediation for 14 finding patterns; checks Region Readiness before building (features, phone numbers, outbound campaign destinations, Global Resiliency pairing); ranks Connect cost savings; and gives a go/no-go Peak Readiness verdict before Black Friday, a campaign, or a launch. Trigger on requests like 'review my Connect instance', 'fix SEC-001', 'choppy audio', 'which Region for Connect', 'cut Connect costs', or 'are we ready for peak'. Works with any AI tool that has AWS CLI/SDK access; loads reference files on demand to minimize hallucination."
 metadata:
   version: "1.5.0"
   author: "aws-samples"
@@ -55,9 +55,9 @@ Selection rules:
 After the user chooses, jump to that module's starting point:
 - **1 — Review** → Investigation Workflow, Step 1 (below)
 - **2 — Troubleshoot** → Runbook Category Index (below)
-- **3 — Region Readiness** → `references/region-readiness.md`
-- **4 — Cost Optimization** → `references/cost-optimization.md`
-- **5 — Peak Readiness** → `references/peak-readiness.md`
+- **3 — Region Readiness** → [region-readiness.md](references/region-readiness.md)
+- **4 — Cost Optimization** → [cost-optimization.md](references/cost-optimization.md)
+- **5 — Peak Readiness** → [peak-readiness.md](references/peak-readiness.md)
 
 ### Example prompts (share with users as starting points)
 
@@ -94,9 +94,9 @@ After the user chooses, jump to that module's starting point:
 |---|---|---|---|
 | **Review** | Well-Architected operations review across 7 pillars | Yes (read-only) | Investigation Workflow, Step 1 |
 | **Troubleshoot** | A finding ID or a symptom → diagnose, verify, propose fix | Yes (read-only by default) | Runbook Category Index |
-| **Region Readiness** | Which Region supports the features, numbers, campaign destinations, and DR pairing a customer needs — before they build | **No** (fetches live AWS pages when web access is available, bundled snapshot otherwise) | `references/region-readiness.md` |
-| **Cost Optimization** | Ranked, dollar-sized savings opportunities and spend-anomaly driver analysis (`CSO-xxx`) | Yes (read-only, incl. Cost Explorer — ~$0.01 per request) | `references/cost-optimization.md` |
-| **Peak Readiness** | Go / no-go verdict before a peak event, with a lead-time-ordered action plan (`PEAK-xxx`) | Yes (read-only) | `references/peak-readiness.md` |
+| **Region Readiness** | Which Region supports the features, numbers, campaign destinations, and DR pairing a customer needs — before they build | **No** (fetches live AWS pages when web access is available, bundled snapshot otherwise) | [region-readiness.md](references/region-readiness.md) |
+| **Cost Optimization** | Ranked, dollar-sized savings opportunities and spend-anomaly driver analysis (`CSO-xxx`) | Yes (read-only, incl. Cost Explorer — ~$0.01 per request) | [cost-optimization.md](references/cost-optimization.md) |
+| **Peak Readiness** | Go / no-go verdict before a peak event, with a lead-time-ordered action plan (`PEAK-xxx`) | Yes (read-only) | [peak-readiness.md](references/peak-readiness.md) |
 
 The module is chosen via the selection gate above. A single engagement runs one module at a time; the only cross-module behavior is that a Review (option 1) includes the Region Readiness cross-check on each discovered instance.
 
@@ -104,15 +104,25 @@ The module is chosen via the selection gate above. A single engagement runs one 
 
 Pick the module via the selection gate above; the Example prompts show typical triggers for each. In short: **Review** for an operations/health/Well-Architected assessment (one pillar, several, or all 7, with instance discovery); **Troubleshoot** for a symptom, a finding ID to fix, a fix/rollback/verification, call-quality issues, or ACGR sync checks; **Region Readiness** for which Region supports a feature / number / campaign destination / DR pairing, or any Region-shaped failure, before building; **Cost Optimization** to cut or explain the Connect bill (Pillar 5 of a Review flags cost issues; this module sizes and ranks them); **Peak Readiness** for a pre-event capacity go / no-go.
 
-**Note on scope:** By default, all of the above is read-only diagnosis and reporting. See `references/global-rules.md` ("Read-Only by Default" and "Two-Gate Confirmation Sequence for Any Write") — no fix is applied unless the customer explicitly asks for that specific fix AND then confirms the agent's concrete change proposal.
+**Note on scope:** By default, all of the above is read-only diagnosis and reporting. See [global-rules.md](references/global-rules.md) ("Read-Only by Default" and "Two-Gate Confirmation Sequence for Any Write") — no fix is applied unless the customer explicitly asks for that specific fix AND then confirms the agent's concrete change proposal.
 
-**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see `references/call_quality_playbook.md` ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence. A standalone Region Readiness run for a contact center that isn't live yet has no calls to ask about, so D0 doesn't apply there; nor does it apply to a standalone Cost Optimization or Peak Readiness run, whose scope is spend or capacity (Peak Readiness still records agent-site network reachability as PEAK-021). It does apply as soon as the run touches an existing instance.
+**Note on call quality:** Every operations review or troubleshooting pass MUST explicitly ask the customer whether they're experiencing call quality issues — see [call_quality_playbook.md](references/call_quality_playbook.md) ("Call Quality Intake Checklist", D0). Do not infer this from pillar findings or silence. A standalone Region Readiness run for a contact center that isn't live yet has no calls to ask about, so D0 doesn't apply there; nor does it apply to a standalone Cost Optimization or Peak Readiness run, whose scope is spend or capacity (Peak Readiness still records agent-site network reachability as PEAK-021). It does apply as soon as the run touches an existing instance.
 
 **Note on runbook cross-referencing:** An operations review does NOT end at producing pillar findings. Every finding surfaced by Step 3's pillar assessments — not just ones the customer explicitly names — MUST be routed through its matching Runbook Category for Diagnose/Verify treatment before the Step 4 report is produced. See Step 3 below.
 
 ---
 
 ## Investigation Workflow
+
+Copy this checklist and tick each step as you complete it. Do not start a step until the previous one is done; each step's details are in the matching section below.
+
+```
+Review progress:
+- [ ] Step 1: Scoping Inputs — resolve accounts, regions, instances, and pillars in scope
+- [ ] Step 2: Discovery & Classification — list, describe, and classify each instance; collect shared data once
+- [ ] Step 3: Pillar Assessments — run each in-scope pillar's checks, cross-reference every finding to a runbook, and run the D0 call-quality intake
+- [ ] Step 4: Report — satisfy the Report Generation Gate, then write the report (fixes are proposals only)
+```
 
 ### Step 1 — Scoping Inputs
 
@@ -125,14 +135,14 @@ Before running any assessment, resolve these inputs. If a caller (human or orche
 | Instance(s) | Provided explicitly, or discover via Step 2 and present the list for selection |
 | Pillar(s) to assess | One, several, or "all 7" — default to all 7 if unspecified for a full review |
 
-**Safety check before any remediation (applies throughout — see `references/global-rules.md` for full detail):**
+**Safety check before any remediation (applies throughout — see [global-rules.md](references/global-rules.md) for full detail):**
 1. Confirm the target instance's classification (production vs dev/test) — this is agent-inferred from tags/integrations in Step 2 below, NOT authoritative; state it and its basis as part of the Change Proposal
 2. Any write follows the Two-Gate Confirmation Sequence: Gate 1 (general intent) → agent presents a Change Proposal (what/how/before/after/rollback) → Gate 2 (explicit confirmation of that specific proposal) → only then execute
 3. For production instances: always provide rollback steps
 4. Never delete resources without explicit confirmation of that specific deletion
 5. Never modify ACTIVE contact flows without a backup (describe-before-modify)
 
-See `references/scoping-gate.md` for the full scoping inputs checklist, and `references/global-rules.md` for the full Two-Gate Confirmation Sequence and Change Proposal requirements.
+See [scoping-gate.md](references/scoping-gate.md) for the full scoping inputs checklist, and [global-rules.md](references/global-rules.md) for the full Two-Gate Confirmation Sequence and Change Proposal requirements.
 
 ### Step 2 — Discovery & Classification
 
@@ -148,11 +158,11 @@ aws connect list-integration-associations --instance-id <instance-id> --region <
 aws connect list-tags-for-resource --resource-arn <instance-arn> --region <region>
 ```
 
-Classify each discovered instance using the classification criteria in `references/connect-ops-review-orchestrator.md` — that file is the **canonical source** for discovery, classification, and pillar routing; do not restate its criteria table here (keeping a single copy avoids drift).
+Classify each discovered instance using the classification criteria in [connect-ops-review-orchestrator.md](references/connect-ops-review-orchestrator.md) — that file is the **canonical source** for discovery, classification, and pillar routing; do not restate its criteria table here (keeping a single copy avoids drift).
 
 **Classification is a heuristic signal based only on tags, alias, and integrations found — not an authoritative production/dev-test determination.** An instance with no tags or an ambiguous alias MUST be treated as unconfirmed/production-risk, not automatically "safe".
 
-Collect shared data once (flows, queues, users, routing profiles, phone numbers) — see `references/connect-ops-review-orchestrator.md` for the full discovery and shared-data-collection procedure and pillar-routing rules.
+Collect shared data once (flows, queues, users, routing profiles, phone numbers) — see [connect-ops-review-orchestrator.md](references/connect-ops-review-orchestrator.md) for the full discovery and shared-data-collection procedure and pillar-routing rules.
 
 Full instance details, including disconnect reason, come from:
 ```bash
@@ -176,26 +186,26 @@ If the instance itself is unreachable (`AccessDeniedException` on `ListInstances
 
 Before executing any API calls, determine the requested pillar scope:
 
-- If the customer names specific pillar(s), execute ONLY the API calls filed under those pillar(s)' sections in `references/api-surface.md`, using each named pillar's `connect-pillar-N-*.md` for the authoritative Check sequence. Do NOT execute calls filed exclusively under out-of-scope pillars.
+- If the customer names specific pillar(s), execute ONLY the API calls filed under those pillar(s)' sections in [api-surface.md](references/api-surface.md), using each named pillar's `connect-pillar-N-*.md` for the authoritative Check sequence. Do NOT execute calls filed exclusively under out-of-scope pillars.
 - If the customer requests ALL pillars or a general/full review, execute the full catalog across all 7 pillar sections.
 - An API filed under multiple pillars (e.g. ListLambdaFunctions) is executed once per in-scope pillar that references it — each applies its own Describe/Get follow-up and interpretive lens.
 
-`references/api-surface.md` gives catalog context per pillar; the pillar file's own numbered Checks are authoritative on any conflict.
+[api-surface.md](references/api-surface.md) gives catalog context per pillar; the pillar file's own numbered Checks are authoritative on any conflict.
 
 
 For a full or partial **operations review**, load and execute only the selected pillar files:
 
 | Pillar | Reference File |
 |---|---|
-| 1 — Operational Excellence | `references/connect-pillar-1-ops-excellence.md` |
-| 2 — Security | `references/connect-pillar-2-security.md` |
-| 3 — Reliability | `references/connect-pillar-3-reliability.md` |
-| 4 — Performance Efficiency | `references/connect-pillar-4-performance.md` |
-| 5 — Cost Optimization | `references/connect-pillar-5-cost.md` |
-| 6 — Sustainability | `references/connect-pillar-6-sustainability.md` |
-| 7 — Generative AI | `references/connect-pillar-7-genai.md` |
+| 1 — Operational Excellence | [connect-pillar-1-ops-excellence.md](references/connect-pillar-1-ops-excellence.md) |
+| 2 — Security | [connect-pillar-2-security.md](references/connect-pillar-2-security.md) |
+| 3 — Reliability | [connect-pillar-3-reliability.md](references/connect-pillar-3-reliability.md) |
+| 4 — Performance Efficiency | [connect-pillar-4-performance.md](references/connect-pillar-4-performance.md) |
+| 5 — Cost Optimization | [connect-pillar-5-cost.md](references/connect-pillar-5-cost.md) |
+| 6 — Sustainability | [connect-pillar-6-sustainability.md](references/connect-pillar-6-sustainability.md) |
+| 7 — Generative AI | [connect-pillar-7-genai.md](references/connect-pillar-7-genai.md) |
 
-**Cross-check pillar coverage against `references/waf-pillar-checks.md`** before treating a pillar pass as complete — it holds the full Well-Architected checklist per pillar. If a pillar file's checks don't cover an item listed there for the pillars in scope, note the gap explicitly in that pillar's findings rather than silently skipping it.
+**Cross-check pillar coverage against [waf-pillar-checks.md](references/waf-pillar-checks.md)** before treating a pillar pass as complete — it holds the full Well-Architected checklist per pillar. If a pillar file's checks don't cover an item listed there for the pillars in scope, note the gap explicitly in that pillar's findings rather than silently skipping it.
 
 **Mandatory follow-on step — do not treat as optional or as a separate path from the review:** once pillar assessments produce findings, loop through **every single finding, regardless of severity**, and:
 1. Map it to its Runbook Category (A–H, R) using the Runbook Category Index below or the finding's pillar-file "Fix" reference
@@ -206,15 +216,15 @@ For a full or partial **operations review**, load and execute only the selected 
 
 **This applies to a customer-named symptom or finding ID exactly the same way** — the only difference is a customer request starts directly at this step for one finding, while a full review arrives here for all findings produced by Step 3's pillar assessments.
 
-**Regardless of what triggered this run, also execute the Call Quality Intake Gate (D0) in `references/call_quality_playbook.md`** — this is a mandatory explicit ask on every pass, not something to infer from pillar results.
+**Regardless of what triggered this run, also execute the Call Quality Intake Gate (D0) in [call_quality_playbook.md](references/call_quality_playbook.md)** — this is a mandatory explicit ask on every pass, not something to infer from pillar results.
 
-**If a Diagnose/Verify step or a pillar check calls for an AWS API not already listed in the Tool Quick Reference below, consult `references/api-surface.md`** — the complete API catalog — before concluding the API isn't available; do not assume a capability doesn't exist just because it's absent from the shortlist.
+**If a Diagnose/Verify step or a pillar check calls for an AWS API not already listed in the Tool Quick Reference below, consult [api-surface.md](references/api-surface.md)** — the complete API catalog — before concluding the API isn't available; do not assume a capability doesn't exist just because it's absent from the shortlist.
 
-Read `references/global-rules.md` before concluding on any finding — it defines the anti-hallucination grounding rules, the read-only-by-default rule, the Two-Gate Confirmation Sequence and Change Proposal format, safety checklist, verification pattern, and timeout/retry policy shared across every pillar and runbook.
+Read [global-rules.md](references/global-rules.md) before concluding on any finding — it defines the anti-hallucination grounding rules, the read-only-by-default rule, the Two-Gate Confirmation Sequence and Change Proposal format, safety checklist, verification pattern, and timeout/retry policy shared across every pillar and runbook.
 
 ### Step 4 — Report
 
-**Gate:** before writing the report, satisfy the Report Generation Gate in `references/global-rules.md` — every in-scope check's Describe/Get tier ran, or is marked `[Not checked — reason]`. Do not generate the report with any check silently left at List-only.
+**Gate:** before writing the report, satisfy the Report Generation Gate in [global-rules.md](references/global-rules.md) — every in-scope check's Describe/Get tier ran, or is marked `[Not checked — reason]`. Do not generate the report with any check silently left at List-only.
 
 Produce a report with these sections. This is a content template only — deliver it in whatever output format fits the calling tool (chat message, file, ticket comment, etc.); nothing here requires a specific artifact or storage system.
 
@@ -226,7 +236,7 @@ Produce a report with these sections. This is a content template only — delive
 6. **Call Quality Section** — result of the mandatory D0 ask: either the customer's explicit answer (and D0.1–D0.5 detail if YES), or, if this run had no way to ask a live customer, an explicit open question flagging that call quality status was not confirmed — never a silent "No issues" absent an actual answer
 7. **Prioritized Remediation Plan** — Immediate / This Sprint / Next Sprint / Backlog
 
-All fixes listed in the report are proposals only — none are applied by generating this report. Applying any of them requires the full Two-Gate Confirmation Sequence in `references/global-rules.md`.
+All fixes listed in the report are proposals only — none are applied by generating this report. Applying any of them requires the full Two-Gate Confirmation Sequence in [global-rules.md](references/global-rules.md).
 
 ---
 
@@ -236,15 +246,15 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 
 | Category | IDs | Covers | Reference File |
 |---|---|---|---|
-| A — Contact Flow & Logging | A1 (OPS-001) | Contact flow logging gaps, invisible flow errors | `references/troubleshooting-guide.md` |
-| B — Monitoring & Alarms | B1 (OPS-002) | Missing CloudWatch alarms, operational blindness | `references/troubleshooting-guide.md` |
-| C — Security & Access | C1 (SEC-001), C2 (SEC-007), C3 (SEC-006), C4 (IAM) | HTTP approved origins, S3 encryption, KMS key upgrade, IAM permission errors | `references/troubleshooting-guide.md`, `references/iam-permission-errors.md` |
-| D — Telephony & Call Quality | D0 (mandatory intake), D1–D4 (PERF-CQ-001–004) | Call quality intake (always run), agent-side/WebRTC, telephony-side/carrier, CCP log analysis | `references/call_quality_playbook.md` |
-| E — Integrations | E1 (PERF-002), E2 (AI-001) | Lex bot test alias in production, AI guardrail verification | `references/troubleshooting-guide.md` |
-| F — Reliability & DR | F1 (REL-001), F2–F6 (REL-009–013) | Traffic Distribution Group / DR, ACGR sync configuration and failure recovery | `references/acgr-sync-operations.md` |
-| G — Cost | G1 (COST-004), G2 (COST-003) | S3 lifecycle policy, cost spike investigation | `references/troubleshooting-guide.md` |
-| H — Metrics & Session Policy | H1 (Metrics Blocker), H2 (PERF-003) | Session policy / elevated role blocking real-time metrics, Contact Lens test rule in production | `references/troubleshooting-guide.md`, `references/iam-permission-errors.md` |
-| R — Region Readiness | R1 (REG-001–013) | Feature, telephony, campaign-destination, Global Resiliency, and latency fit of a Region | `references/region-readiness.md` |
+| A — Contact Flow & Logging | A1 (OPS-001) | Contact flow logging gaps, invisible flow errors | [troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| B — Monitoring & Alarms | B1 (OPS-002) | Missing CloudWatch alarms, operational blindness | [troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| C — Security & Access | C1 (SEC-001), C2 (SEC-007), C3 (SEC-006), C4 (IAM) | HTTP approved origins, S3 encryption, KMS key upgrade, IAM permission errors | [troubleshooting-guide.md](references/troubleshooting-guide.md), [iam-permission-errors.md](references/iam-permission-errors.md) |
+| D — Telephony & Call Quality | D0 (mandatory intake), D1–D4 (PERF-CQ-001–004) | Call quality intake (always run), agent-side/WebRTC, telephony-side/carrier, CCP log analysis | [call_quality_playbook.md](references/call_quality_playbook.md) |
+| E — Integrations | E1 (PERF-002), E2 (AI-001) | Lex bot test alias in production, AI guardrail verification | [troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| F — Reliability & DR | F1 (REL-001), F2–F6 (REL-009–013) | Traffic Distribution Group / DR, ACGR sync configuration and failure recovery | [acgr-sync-operations.md](references/acgr-sync-operations.md) |
+| G — Cost | G1 (COST-004), G2 (COST-003) | S3 lifecycle policy, cost spike investigation | [troubleshooting-guide.md](references/troubleshooting-guide.md) |
+| H — Metrics & Session Policy | H1 (Metrics Blocker), H2 (PERF-003) | Session policy / elevated role blocking real-time metrics, Contact Lens test rule in production | [troubleshooting-guide.md](references/troubleshooting-guide.md), [iam-permission-errors.md](references/iam-permission-errors.md) |
+| R — Region Readiness | R1 (REG-001–013) | Feature, telephony, campaign-destination, Global Resiliency, and latency fit of a Region | [region-readiness.md](references/region-readiness.md) |
 | Z — Catch-All | Z1 | Symptom or finding not mapped to any category above — do NOT silently drop it, diagnose it under Z1 and note the gap | This file |
 
 **Note:** Findings from pillars 1–7 that don't yet have a dedicated pattern in `troubleshooting-guide.md`, `call_quality_playbook.md`, `acgr-sync-operations.md`, or `iam-permission-errors.md` (e.g., a Sustainability or Cost finding without an existing numbered pattern) still route to Category Z: re-run the pillar's own Diagnose-equivalent check as the runbook Diagnose step, and note "no dedicated runbook pattern exists yet for this finding type" rather than omitting it from the Troubleshooting Guide report section.
@@ -274,8 +284,8 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | Outbound calls to a country blocked | R1 (REG-006) |
 | Can't create an ACGR replica in the chosen Region | R1 (REG-008) |
 | "Which Region should we use?" | R1 |
-| Rank savings / find unused numbers / is a feature worth it | Cost Optimization module (`references/cost-optimization.md`) |
-| "Are we ready for the peak / can we handle 2x?" | Peak Readiness module (`references/peak-readiness.md`) |
+| Rank savings / find unused numbers / is a feature worth it | Cost Optimization module ([cost-optimization.md](references/cost-optimization.md)) |
+| "Are we ready for the peak / can we handle 2x?" | Peak Readiness module ([peak-readiness.md](references/peak-readiness.md)) |
 
 ---
 
@@ -303,9 +313,9 @@ Runbooks are organized by failure domain. Use the appropriate category based on 
 | `cloudtrail:lookup-events` | ACGR sync detection, audit trail, API-level change history — read-only, available under standard agent controls, no separate elevated grant needed |
 | `iam:simulate-principal-policy` | Diagnosing session-policy vs identity-policy permission errors |
 
-This table is a curated shortlist of the most commonly needed calls, not the complete set. **If a check needs an AWS API not listed here, consult `references/api-surface.md` for the complete API catalog before assuming the capability doesn't exist.**
+This table is a curated shortlist of the most commonly needed calls, not the complete set. **If a check needs an AWS API not listed here, consult [api-surface.md](references/api-surface.md) for the complete API catalog before assuming the capability doesn't exist.**
 
-All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `delete-*`, `associate-*`, `disassociate-*`, `put-*`) appear only inside a runbook's "Fix" step and only run after the full Two-Gate Confirmation Sequence (`references/global-rules.md`).
+All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `delete-*`, `associate-*`, `disassociate-*`, `put-*`) appear only inside a runbook's "Fix" step and only run after the full Two-Gate Confirmation Sequence ([global-rules.md](references/global-rules.md)).
 
 ---
 
@@ -318,7 +328,7 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - Agents must be in "Available" status to receive contacts. Custom "Routable" statuses do NOT route contacts unless explicitly configured.
 - CCP (Contact Control Panel) requires WebRTC — outbound UDP port 3478 (SEND/RECEIVE) for media/TURN, plus TCP 443 for signalling/HTTPS, with `*.connect.aws`/`*.transport.connect.aws` domains allow-listed. Media flows over UDP 3478; there is no documented TCP 443 media/TURN fallback. Corporate firewalls, VPN split-tunneling, and SSL inspection commonly break CCP connectivity.
 - Phone numbers are region-specific — a number claimed in one region cannot be used by an instance in another region.
-- Region availability differs per feature, per phone-number country/type, and per outbound campaign destination. Never answer "is X available in Region Y" from memory — the Region Readiness mode (`references/region-readiness.md`) fetches the decisive live AWS page by default (falling back to the bundled snapshot when web access is unavailable) and cites the source and date it used.
+- Region availability differs per feature, per phone-number country/type, and per outbound campaign destination. Never answer "is X available in Region Y" from memory — the Region Readiness mode ([region-readiness.md](references/region-readiness.md)) fetches the decisive live AWS page by default (falling back to the bundled snapshot when web access is unavailable) and cites the source and date it used.
 - Outbound campaign destinations are fixed by the instance's home Region (e.g. no campaign calls from Europe (London) to US numbers), and Global Resiliency replicas exist only for three Region pairings (`us-east-1`↔`us-west-2`, `eu-central-1`↔`eu-west-2`, `ap-northeast-1`→`ap-northeast-3`).
 - Contact records (formerly "contact trace records"/CTRs) are delivered at least once and may be delivered again when new information arrives (e.g. after update-contact-attributes); there is no documented fixed 24-hour delivery window. Each record is available for 24 months from contact initiation. Use Kinesis streaming for near-real-time delivery.
 - `wisdom:*` (Q in Connect, AI Agents, AI Guardrails, AI Prompts) is a completely separate IAM namespace from `connect:*`. The `connect:*` wildcard grants zero `wisdom:` access.
@@ -346,25 +356,26 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 
 ## Reference Files
 
-- `references/global-rules.md` — Grounding rules, read-only-by-default rule, Two-Gate Confirmation Sequence + Change Proposal format, safety checklist, verification pattern, timeout/retry policy (shared across all pillars and runbooks)
-- `references/scoping-gate.md` — Scoping inputs checklist (accounts, instances, pillars)
-- `references/connect-ops-review-orchestrator.md` — Discovery, classification, and shared data collection
-- `references/connect-pillar-1-ops-excellence.md` — Pillar 1 checks (Operational Excellence)
-- `references/connect-pillar-2-security.md` — Pillar 2 checks (Security)
-- `references/connect-pillar-3-reliability.md` — Pillar 3 checks (Reliability) + Check 3.7 ACGR
-- `references/connect-pillar-4-performance.md` — Pillar 4 checks (Performance Efficiency)
-- `references/connect-pillar-5-cost.md` — Pillar 5 checks (Cost Optimization)
-- `references/connect-pillar-6-sustainability.md` — Pillar 6 checks (Sustainability)
-- `references/connect-pillar-7-genai.md` — Pillar 7 checks (Generative AI)
-- `references/troubleshooting-guide.md` — Runbook categories A, B, C, E, G, H: index, symptom lookup, remediation plan template, detailed procedures
-- `references/call_quality_playbook.md` — Category D: mandatory call quality intake gate (D0) + PERF-CQ-001–004 procedures
-- `references/acgr-sync-operations.md` — Category F: ACGR sync architecture, detection, remediation (REL-009–013), failover test campaign
-- `references/iam-permission-errors.md` — Category C4/H1: IAM error disambiguation
-- `references/waf-pillar-checks.md` — Well-Architected Framework pillar checklist. Consulted in Step 3 to verify pillar-check coverage before a pillar pass is treated as complete.
-- `references/api-surface.md` — Complete API catalog. Consulted in Step 3 and the Tool Quick Reference as the fallback when a needed AWS API isn't in the curated shortlist.
-- `references/region-readiness.md` — Region Readiness mode: requirements intake, evaluation, interpretation, report template, existing-instance hook, manual rules, REG-001–013 catalog
-- `references/region-readiness-matrix.md` — Generated, human-readable Region matrix (features, campaign destinations, default outbound countries, per-country telephony). Use when code execution isn't available.
-- `references/cost-optimization.md` — Cost Optimization mode: spend baseline, lever evaluation, quantify-and-rank, report template, CSO-001–019 catalog
-- `references/peak-readiness.md` — Peak Readiness mode: event intake, capacity/quota, dependency, preparedness checks, verdict rules, report template (incl. machine-readable JSON), PEAK-xxx catalog
-- `references/region-data/connect-region-data.json` — Dated **fallback** snapshot of the AWS sources, used when a live fetch isn't possible. Region Readiness fetches live pages first by default (Step R0).
+- [global-rules.md](references/global-rules.md) — **Load before concluding on any finding, proposing any fix, or writing a report.** Grounding rules, read-only-by-default rule, Two-Gate Confirmation Sequence + Change Proposal format, safety checklist, verification pattern, timeout/retry policy (shared across all pillars and runbooks)
+- [scoping-gate.md](references/scoping-gate.md) — **Load in Step 1 of a Review, before discovery.** Scoping inputs checklist (accounts, instances, pillars)
+- [connect-ops-review-orchestrator.md](references/connect-ops-review-orchestrator.md) — **Load in Step 2 of a Review to discover and classify instances.** Discovery, classification, and shared data collection
+- [connect-pillar-1-ops-excellence.md](references/connect-pillar-1-ops-excellence.md) — **Load in Step 3 when Pillar 1 is in scope.** Pillar 1 checks (Operational Excellence)
+- [connect-pillar-2-security.md](references/connect-pillar-2-security.md) — **Load in Step 3 when Pillar 2 is in scope.** Pillar 2 checks (Security)
+- [connect-pillar-3-reliability.md](references/connect-pillar-3-reliability.md) — **Load in Step 3 when Pillar 3 is in scope or ACGR is involved.** Pillar 3 checks (Reliability) + Check 3.7 ACGR
+- [connect-pillar-4-performance.md](references/connect-pillar-4-performance.md) — **Load in Step 3 when Pillar 4 is in scope.** Pillar 4 checks (Performance Efficiency)
+- [connect-pillar-5-cost.md](references/connect-pillar-5-cost.md) — **Load in Step 3 when Pillar 5 is in scope.** Pillar 5 checks (Cost Optimization)
+- [connect-pillar-6-sustainability.md](references/connect-pillar-6-sustainability.md) — **Load in Step 3 when Pillar 6 is in scope.** Pillar 6 checks (Sustainability)
+- [connect-pillar-7-genai.md](references/connect-pillar-7-genai.md) — **Load in Step 3 when Pillar 7 is in scope.** Pillar 7 checks (Generative AI)
+- [troubleshooting-guide.md](references/troubleshooting-guide.md) — **Load when the user picks Troubleshoot (module 2) or a finding maps to runbook category A, B, C, E, G, or H.** Runbook categories A, B, C, E, G, H: index, symptom lookup, remediation plan template, detailed procedures
+- [call_quality_playbook.md](references/call_quality_playbook.md) — **Load on every Review or Troubleshoot pass (mandatory D0 intake) and for any audio/call-quality symptom.** Category D: mandatory call quality intake gate (D0) + PERF-CQ-001–004 procedures
+- [acgr-sync-operations.md](references/acgr-sync-operations.md) — **Load when a finding or question involves Global Resiliency, Traffic Distribution Groups, or ACGR sync (category F).** Category F: ACGR sync architecture, detection, remediation (REL-009–013), failover test campaign
+- [iam-permission-errors.md](references/iam-permission-errors.md) — **Load when any AWS call returns AccessDenied or a session-policy error (category C4/H1).** Category C4/H1: IAM error disambiguation
+- [waf-pillar-checks.md](references/waf-pillar-checks.md) — **Load in Step 3 before treating any pillar pass as complete.** Well-Architected Framework pillar checklist. Consulted in Step 3 to verify pillar-check coverage before a pillar pass is treated as complete.
+- [api-surface.md](references/api-surface.md) — **Load when a check needs an AWS API not listed in the Tool Quick Reference.** Complete API catalog. Consulted in Step 3 and the Tool Quick Reference as the fallback when a needed AWS API isn't in the curated shortlist.
+- [region-readiness.md](references/region-readiness.md) — **Load only when the user picks Region Readiness (module 3), or during a Review for the per-instance Region cross-check.** Region Readiness mode: requirements intake, evaluation, interpretation, report template, existing-instance hook, manual rules, REG-001–013 catalog
+- [region-readiness-matrix.md](references/region-readiness-matrix.md) — **Load during Region Readiness when code execution is not available.** Generated, human-readable Region matrix (features, campaign destinations, default outbound countries, per-country telephony). Use when code execution isn't available.
+- [cost-optimization.md](references/cost-optimization.md) — **Load only when the user picks Cost Optimization (module 4) or asks about CSO-xxx findings.** Cost Optimization mode: spend baseline, lever evaluation, quantify-and-rank, report template, CSO-001–019 catalog
+- [peak-readiness.md](references/peak-readiness.md) — **Load only when the user picks Peak Readiness (module 5) or asks about PEAK-xxx findings or event readiness.** Peak Readiness mode: event intake, capacity/quota, dependency, preparedness checks, verdict rules, report template (incl. machine-readable JSON), PEAK-xxx catalog
+- [region-data/connect-region-data.json](references/region-data/connect-region-data.json) — **Do not read this file directly. During Region Readiness, when a live fetch of the AWS pages is not possible, run `scripts/region_readiness.py`, which reads it; if code execution isn't available, load [region-readiness-matrix.md](references/region-readiness-matrix.md) instead.** Dated fallback snapshot of the AWS sources (~300 KB, regenerated by `scripts/build_region_data.py`). Region Readiness fetches live pages first by default (Step R0).
+- [investigation-prompt-template.md](references/investigation-prompt-template.md) — **Load only when a user asks how to start or word a new Ops Review investigation.** Copy-and-fill prompt template (account, instance, pillars) that keeps the investigation description short to reduce token cost.
 - `scripts/region_readiness.py` — Deterministic Region Readiness evaluator over the fallback snapshot (stdlib Python, no AWS access). `scripts/build_region_data.py` is a maintainer tool that refreshes the snapshot — automate it on a schedule (monthly cron/CI) so the fallback never goes stale; customers never run it.
