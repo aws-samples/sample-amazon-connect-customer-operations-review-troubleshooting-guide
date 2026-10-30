@@ -8,7 +8,7 @@ access, not just a specific agentic tool.
 
 ## What This Skill Is For
 
-Three related jobs, one skill:
+Five related jobs, one skill:
 
 1. **Operations Review** — a full or partial Well-Architected assessment of one or more
    Connect instances across 7 pillars (Operational Excellence, Security, Reliability,
@@ -22,6 +22,13 @@ Three related jobs, one skill:
    account access: a deterministic script (`scripts/region_readiness.py`) evaluates your
    requirements against a dated snapshot of the official AWS sources and returns a
    per-Region verdict with `REG-xxx` findings, citations, and a recommendation.
+4. **Cost Optimization** — decomposes the Connect bill (Cost Explorer) and returns a ranked
+   list of savings opportunities with estimated monthly dollar impact, evidence and effort
+   (`CSO-xxx` findings). Never releases a number or disables a feature.
+5. **Peak Readiness** — a go / no-go gate before a peak event: projects recent peaks
+   against the target and checks quota headroom, IVR Lambda and Lex capacity, resiliency,
+   monitoring and staffing/routing, returning READY / READY WITH ACTIONS / NOT READY with a
+   lead-time-ordered action plan (`PEAK-xxx` findings).
 
 Every review and every troubleshooting pass ends with the same guarantee: findings are
 evidence-backed, cross-referenced to a runbook, and nothing gets written to your Connect
@@ -102,6 +109,8 @@ Agents are reporting choppy audio on calls today. Investigate call quality.
 Check whether ACGR is still syncing between our primary and DR replica instances.
 Which Region should we use? We need UK and South African numbers, Contact Lens, and outbound campaigns to the UK.
 Can our eu-west-2 instance run outbound campaigns to US numbers?
+Why is our Connect bill rising, and which savings should we go after first?
+Are we ready for Black Friday at 2x our normal peak?
 
 
 ## Region Readiness — run it yourself
@@ -143,7 +152,8 @@ Sources: [Supported Regions](https://docs.aws.amazon.com/connect/latest/admingui
 ## Prerequisites
 
 - AWS CLI/SDK access with `connect`, `cloudwatch`, `logs`, `lambda`, `wisdom`,
-  `cloudtrail`, and `iam` (read) permissions (not needed for Region Readiness)
+  `cloudtrail`, and `iam` (read) permissions (not needed for Region Readiness); Cost
+  Optimization also needs `ce` read, and Peak Readiness `servicequotas` read
 - Contact flow logs enabled at the instance level if flow-level diagnosis is needed
   (the skill will tell you if it isn't)
 - For CCP/call-quality diagnosis: be ready to share browser dev tools output or network

@@ -3,6 +3,22 @@
 All notable changes to this skill are documented here. Versions are tagged in git
 (`v1.0.0`, `v1.1.0`, …) so any release can be checked out or reverted directly.
 
+## [1.5.0] - 2026-10-26
+### Added
+- **Cost Optimization module** (menu option 4) — `references/cost-optimization.md`. Spend
+  baseline from Cost Explorer (by service, usage type and `aws:connect:instanceId` tag),
+  forecast and Cost Anomaly Detection findings; lever evaluation for phone numbers,
+  telephony mix, pricing-plan-gated feature ROI, idle instances, recording storage and spend
+  hygiene; quantify-and-rank with stated formulas; `CSO-001`–`CSO-019` finding catalog.
+  Ported from the `connect-cost-optimization` skill with every MCP tool replaced by direct
+  read-only AWS CLI/SDK calls.
+- **Peak Readiness module** (menu option 5) — `references/peak-readiness.md`. Event
+  intake, capacity/quota headroom (CloudWatch concurrency + GetMetricDataV2 baseline +
+  Service Quotas), IVR Lambda / Lex / resiliency / network checks, monitoring and
+  staffing/routing preparedness, attestation vocabulary, READY / READY WITH ACTIONS /
+  NOT READY verdict, machine-readable JSON verdict, `PEAK-xxx` finding catalog. Ported from
+  the `connect-scale-readiness` skill with every MCP tool replaced by direct read-only calls.
+- Evals: 4 functional evals and 4 positive / 1 negative trigger queries for the two modules.
 ## [1.4.0] - 2026-10-06
 ### Added
 - **Region Readiness mode.** A self-service, pre-build check of which Amazon Connect home

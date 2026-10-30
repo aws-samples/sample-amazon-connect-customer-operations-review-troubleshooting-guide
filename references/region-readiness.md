@@ -66,6 +66,7 @@ The decision for any one Region question depends on only one or two AWS source p
 2. **Fall back to the bundled snapshot automatically** if a fetch fails, times out, is blocked, or you have no web access. Read `references/region-data/connect-region-data.json` (or `references/region-readiness-matrix.md` if you can't execute code). The snapshot guarantees the customer always gets *an* answer, even offline.
 3. **State the source in one line** so the customer always knows how fresh the answer is — e.g. "Source: live AWS Regions page, fetched 2026-10-06" or "Source: bundled snapshot (2026-10-06) — live fetch unavailable, re-check before committing." Keep it to a single line; do not turn it into a process the customer has to think about.
 4. **Only when live and snapshot disagree** (AWS changed the page since the snapshot was built), prefer the live page, say so, and note the snapshot is now stale.
+5. **Silence is not disagreement.** A live page that doesn't mention a rule does not contradict the snapshot. Keep every catalog finding the snapshot supports (e.g. `REG-010` agent isolation for India, South Korea, and South Africa) and cite the snapshot for it. Only drop or change a finding when a live page explicitly contradicts it.
 
 Never make the customer refresh the snapshot or run a script to get current data — that is maintainer work (see "Keeping the fallback fresh" below), not something an end user should ever touch.
 
@@ -129,11 +130,12 @@ Standard library only, no credentials needed. Note the script evaluates the **bu
 | ✅ `SUPPORTED` | The cited source lists it for that Region | Nothing to action beyond normal build |
 | ⚠️ `CONDITIONAL` | Possible, with a prerequisite or caveat (documents, allow-list case, partner onboarding, Beta status, latency test, ACGR prerequisites) | List the exact prerequisite and its lead time |
 | ❌ `NOT_SUPPORTED` | A cited source says it is unavailable in that Region | A blocker for that Region: pick another Region or a multi-instance split |
-| ❔ `UNKNOWN` | No source covers it (e.g. Email channel is absent from the Regions page) | Confirm with AWS. Never fill the gap from memory. |
+| ❔ `UNKNOWN` | No source covers it (e.g. Email channel is absent from the Regions page) | Lead with "Unknown — not covered by the skill's sources" (never "Yes" or "No"). Never fill the gap from memory. Give exactly one next step: confirm with AWS (Support or your Solutions Architect), or offer a live check of the Regions page. |
 
 - **Region blockers vs design blockers.** A *design blocker* (marked "no Region choice fixes these") is unavailable in every Region — e.g. porting not offered for that country's number type, a Philippines/Vietnam number used by agents outside that country, Voice ID (end of support). Changing Region won't fix it; the requirement itself must change.
 - **`REG-011` (sources disagree).** The bundled sources sometimes conflict: e.g. the phone-number requirements page excludes Africa (Cape Town) and GovCloud by default, while the Telecoms guide lists "All commercial regions". Present both quotes and tell the customer to confirm with AWS (Solutions Architect / Support) before committing. Do not pick a winner silently.
 - **Latency (`REG-009`) is a heuristic.** The continent match only flags risk. The AWS guidance (500 ms network RTT recommended, 900 ms end-to-end upper bound) must be confirmed with the Connect Endpoint Test Utility from real agent locations.
+- **Feature missing in the forced Region → deploy a second instance in another Region.** When a required feature is ❌ (`REG-001`) in the home Region (including a Region forced by phone numbers, e.g. ZA DIDs → `af-south-1`), always recommend a second Connect instance in a Region that lists the feature, and name that Region (pick one that also fits the agents' location and latency, `REG-009`). Split the traffic: the forced Region keeps the numbers that can only be claimed there; the second instance serves the contacts and agents that need the feature. State plainly that the feature is not available on the contacts handled by the forced-Region instance. Offer descoping the feature only as the alternative if a second instance is not acceptable. Do not say a second instance "wouldn't help".
 - **Multi-Region plans.** When no single Region fits, the script proposes a primary Region plus additional instances that cover the remaining requirements. Each additional instance is a separate Connect instance with its own users, flows, reporting and quotas. Point out that cost, and the AWS guidance to prefer a single instance (or single ACGR pair) without compelling requirements (`curated.single_instance_default`).
 
 ## Step R4 — Optional live verification (only with account access and an instance)
@@ -156,11 +158,14 @@ aws connect list-phone-numbers-v2 --instance-id <instance-id> --region <region>
 
 Use the script's Markdown output as the body, or reproduce these sections:
 
+**Always use these eight section headings, in this order, in every full report — even when a section is empty (write "None").** Do not merge sections (e.g. do not fold Design blockers into Recommendation).
+
 1. **Recommendation** — the Region (or multi-instance plan), plus viable alternatives
 2. **Design blockers** — requirements no Region satisfies
 3. **Region scorecard** — every home Region ranked: Region blockers, design blockers, conditions
 4. **Requirement × Region matrix** — top candidates
 5. **Findings per candidate Region** — `REG-xxx`, requirement, detail, source URL
+   - **Label every finding with its catalog ID** from the Finding catalog below, in every answer — reports and short Q&A alike. Use the ID that matches the gap: feature not available in the Region → `REG-001`; agents in India, South Korea, or South Africa → `REG-010` (agent isolation); campaign destination not dialable from the home Region → `REG-007`. Do not substitute a nearby ID (e.g. `REG-003` for a feature gap), and do not drop an applicable ID because another finding is already listed.
 6. **Prerequisites & lead times** — KYC documents, porting windows, allow-list cases, partner onboarding, ACGR onboarding (Enterprise Support / SAML)
 7. **Not evaluated** — anything the customer didn't specify, plus language/locale support (see `references/region-data` → `unlisted_features.languages`)
 8. **Data provenance** — snapshot date, Telecoms guide "Last updated" date, and the statement that this is a point-in-time copy to re-check before committing
@@ -191,7 +196,7 @@ Do not infer customer intent (campaign destinations, agent locations) from an ex
 Apply these in order using `references/region-readiness-matrix.md`:
 
 1. **Feature** — ✅ if the Region column shows ✅ in §2 (or the sub-feature table), else ❌ `REG-001`. Voice ID is ❌ everywhere (end of support 2026-05-20).
-2. **Global Resiliency** — only the pairs in §1 (`us-east-1`↔`us-west-2`, `eu-central-1`↔`eu-west-2`, `ap-northeast-1`→`ap-northeast-3`). Any other source Region ❌ `REG-008`. Always list the prerequisites (Enterprise Support or Unified Operations, SAML 2.0 instance, numbers ported).
+2. **Global Resiliency** — Global Resiliency replicas exist only for `us-east-1` ↔ `us-west-2`, `eu-central-1` ↔ `eu-west-2`, and `ap-northeast-1` → `ap-northeast-3` (one-way; Osaka is replica-only and can never be the home Region). Any other pairing is ❌ `REG-008`. Prerequisites: Enterprise Support or Unified Operations, a SAML 2.0 instance, and numbers ported to the replica. Next step: confirm the customer's home Region is in one of these pairs before planning DR. When answering, always cite `REG-008`, list all three pairs together, and list all three prerequisites.
 3. **Phone number** — find the country/type row in §5. Claimable-in = "All commercial" (every home Region except GovCloud), "All regions", or the listed codes. Otherwise ❌ `REG-002`. A ❌ in a column the customer needs → design blocker `REG-003`. 🟡 → ⚠️ `REG-003`. Status other than GA → ⚠️ `REG-004`. Then check §6: a Region-restricted row or an agent-location rule overrides, and the default rule (excludes Cape Town and GovCloud) conflicting with §5 → ⚠️ `REG-011`.
 4. **Outbound (non-campaign)** — destination in §4 for that Region → ✅, else ⚠️ `REG-006` (allow-list support case; default-deny).
 5. **Campaign destination** — must appear for that Region in §3 in both columns → ✅. In only one column → ⚠️ `REG-011`. In neither → ❌ `REG-007`.
@@ -222,8 +227,8 @@ Apply these in order using `references/region-readiness-matrix.md`:
 
 ## Region gotchas (each sourced in the snapshot)
 
-- Outbound campaign destinations are fixed per home Region. Example from the Regions page: "you can't make campaign calls from Europe (London) to US phone numbers".
-- Global Resiliency replicas exist only for three pairings. Osaka (`ap-northeast-3`) is replica-only, not a home Region.
+- Outbound campaign destinations are fixed per home Region. Example from the Regions page: "you can't make campaign calls from Europe (London) to US phone numbers" (`REG-007`). When the Regions page and the Telecoms guide list different campaign destinations for the same home Region (e.g. `PR` for `us-east-1`/`us-west-2`), report both lists and flag `REG-011` — do not pick one. `REG-011` is added on top of, never instead of, `REG-007` for an unsupported destination.
+- Global Resiliency replicas exist only for `us-east-1` ↔ `us-west-2`, `eu-central-1` ↔ `eu-west-2`, and `ap-northeast-1` → `ap-northeast-3` (one-way; Osaka is replica-only and can never be the home Region). Any other pairing is ❌ `REG-008`. Prerequisites: Enterprise Support or Unified Operations, a SAML 2.0 instance, and numbers ported to the replica. Next step: confirm the customer's home Region is in one of these pairs before planning DR. When answering, always cite `REG-008`, list all three pairs together, and list all three prerequisites.
 - Outbound calling is default-deny. Each Region has a short default country list (e.g. Europe (Frankfurt)/(London): United Kingdom, Italy, France, Ireland, United States — **not** Germany). Other countries need an allow-list case. UK `+447` and Japan `+8170/+8180/+8190` mobile prefixes may need a quota request.
 - Some countries' numbers can be claimed only in specific Regions: South Africa numbers in Africa (Cape Town); Japan geographic `+81 3`/`+81 6` in Asia Pacific (Tokyo); Norway in Europe (Frankfurt)/(London) (all per both the Telecoms guide and the phone-number requirements page); Philippines DID/toll-free in Asia Pacific (Singapore) (Telecoms guide).
 - Philippines and Vietnam numbers require the agents to be physically located in that country.
