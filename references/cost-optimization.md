@@ -105,6 +105,8 @@ Evaluate every lever in the catalog against this account's data. **Pricing basic
 
 ### C3.1 Phone-number inventory (CSO-001–003)
 
+> **Precondition — always state it when recommending or explaining a number release:** exclude shared-trunking / BYOC numbers (no Connect number charge) and DR / traffic distribution group (TDG) failover numbers, and only recommend releasing numbers the customer confirms are unused.
+
 ```bash
 aws connect list-phone-numbers-v2 --target-arn <instance-arn> --region <region>
 aws connect describe-phone-number --phone-number-id <id> --region <region>   # Status, Type, Description

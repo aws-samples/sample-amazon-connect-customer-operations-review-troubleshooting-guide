@@ -760,6 +760,8 @@ def write_markdown(d):
         A("")
     A("## 3. Outbound campaigns — callable destinations by home Region")
     A("")
+    A('> **Where the two columns differ for a home Region (marked ⚠️ `REG-011`), the AWS sources disagree: report both destination lists and flag `REG-011` — do not pick one. Tell the customer to confirm with AWS before committing. `REG-011` is in addition to, never instead of, the finding for the destination itself — an unsupported destination (e.g. Europe (London) → US) is always `REG-007`.**')
+    A("")
     A("| Home Region | Destination countries (regions page) | Destination countries (Telecoms guide `Outbound Campaign Regions` column) |")
     A("|---|---|---|")
     pdf_c = {}
@@ -768,7 +770,10 @@ def write_markdown(d):
             for r in t["campaign_regions"]:
                 pdf_c.setdefault(r, set()).add(t["iso2"])
     for r in homes:
-        A("| `%s` | %s | %s |" % (r, ", ".join(d["campaign_destinations"].get(r, [])) or "—", ", ".join(sorted(pdf_c.get(r, []))) or "—"))
+        _page = ", ".join(d["campaign_destinations"].get(r, [])) or "—"
+        _pdf = ", ".join(sorted(pdf_c.get(r, []))) or "—"
+        _flag = " ⚠️ `REG-011`" if set(d["campaign_destinations"].get(r, [])) != set(pdf_c.get(r, [])) else ""
+        A("| `%s`%s | %s | %s |" % (r, _flag, _page, _pdf))
     A("")
     for n in d.get("campaign_notes", []):
         A("- " + n)

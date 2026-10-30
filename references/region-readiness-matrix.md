@@ -80,22 +80,24 @@ Legend: ✅ available · ❌ not listed for that Region · `Yes*` = as printed o
 
 ## 3. Outbound campaigns — callable destinations by home Region
 
+> **Where the two columns differ for a home Region (marked ⚠️ `REG-011`), the AWS sources disagree: report both destination lists and flag `REG-011` — do not pick one. Tell the customer to confirm with AWS before committing. `REG-011` is in addition to, never instead of, the finding for the destination itself — an unsupported destination (e.g. Europe (London) → US) is always `REG-007`.**
+
 | Home Region | Destination countries (regions page) | Destination countries (Telecoms guide `Outbound Campaign Regions` column) |
 |---|---|---|
 | `af-south-1` | ZA | ZA |
 | `ap-northeast-1` | JP | JP |
 | `ap-northeast-2` | KR | KR |
-| `ap-southeast-1` | MY, PH, SG, TH, VN | MY, PH, SG, TH |
+| `ap-southeast-1` ⚠️ `REG-011` | MY, PH, SG, TH, VN | MY, PH, SG, TH |
 | `ap-southeast-2` | AU, NZ | AU, NZ |
 | `ca-central-1` | CA | CA |
 | `eu-central-1` | BE, DE, DK, ES, FR, GB, IE, IT, NL, PL, PT | BE, DE, DK, ES, FR, GB, IE, IT, NL, PL, PT |
 | `eu-west-2` | BE, DE, DK, ES, FR, GB, IE, IT, NL, PL, PT | BE, DE, DK, ES, FR, GB, IE, IT, NL, PL, PT |
-| `us-east-1` | BR, MX, US | BR, MX, PR, US |
+| `us-east-1` ⚠️ `REG-011` | BR, MX, US | BR, MX, PR, US |
 | `us-gov-west-1` | — | — |
-| `us-west-2` | BR, MX, US | BR, MX, PR, US |
+| `us-west-2` ⚠️ `REG-011` | BR, MX, US | BR, MX, PR, US |
 
 - From instances created in Asia Pacific (Sydney) you can call phone numbers based in Australia and New Zealand. There are a few specific restrictions explained in Make predictive and progressive calls using Connect Customer outbound campaigns ).
-- No other combinations are supported. For example, you can't make campaign calls from Europe (London) to US phone numbers, or from Europe (Frankfurt) to New Zealand phone numbers.
+- No other combinations are supported. For example, you can't make campaign calls from Europe (London) to US phone numbers, or from Europe (Frankfurt) to New Zealand phone numbers (`REG-007`).
 
 ## 4. Countries callable by default (outbound allow-list)
 

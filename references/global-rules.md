@@ -9,6 +9,8 @@
 
 ## Two-Gate Confirmation Sequence for Any Write
 
+**Always refer to this by its exact name, "Two-Gate Confirmation Sequence"** — do not paraphrase it as "two-step confirmation" or similar.
+
 A customer saying "yes, fix it" or "go ahead" is **Gate 1 only** — general intent to remediate. It is NOT sufficient on its own to issue a mutating call. A second, more specific confirmation (**Gate 2**) is required after the agent has proposed the concrete change. Do not collapse these into a single step.
 
 ### Gate 1 — General Intent

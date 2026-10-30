@@ -1,6 +1,6 @@
 ---
 name: "amazon-connect-ops-review-troubleshooting-guide"
-description: "Use this skill when a user wants to review, troubleshoot, cost-optimize, or plan an Amazon Connect contact center. It runs a Well-Architected operations review across 7 pillars (Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); troubleshoots a finding ID or symptom, including call quality and ACGR sync, with self-service remediation for 14 finding patterns; checks Region Readiness before building (features, phone numbers, outbound campaign destinations, Global Resiliency pairing); ranks Connect cost savings; and gives a go/no-go Peak Readiness verdict before Black Friday, a campaign, or a launch. Trigger on requests like 'review my Connect instance', 'fix SEC-001', 'choppy audio', 'which Region for Connect', 'cut Connect costs', or 'are we ready for peak'. Works with any AI tool that has AWS CLI/SDK access; loads reference files on demand to minimize hallucination."
+description: "Amazon Connect Well-Architected Toolkit. Use this skill for any Amazon Connect contact-center question about its five modules: Review (Well-Architected operations review across 7 pillars: Operational Excellence, Security, Reliability, Performance, Cost, Sustainability, GenAI); Troubleshoot (a finding ID or symptom, incl. call quality and ACGR sync, with remediation for 14 finding patterns); Region Readiness (which AWS Region supports the features, phone numbers, outbound campaign destinations, and Global Resiliency Region pairs needed, before building); Cost Optimization (rank Connect bill savings); and Peak Readiness (go/no-go before Black Friday, a campaign, or a launch). Trigger on 'review my Connect instance', 'fix SEC-001', 'choppy audio', 'which AWS Region should host my Connect instance', 'Global Resiliency Region pairs', 'cut Connect costs', 'are we ready for peak'. Works with any AI tool with AWS CLI/SDK access; loads reference files on demand."
 metadata:
   version: "1.5.0"
   author: "aws-samples"
@@ -158,7 +158,7 @@ aws connect list-integration-associations --instance-id <instance-id> --region <
 aws connect list-tags-for-resource --resource-arn <instance-arn> --region <region>
 ```
 
-Classify each discovered instance using the classification criteria in [connect-ops-review-orchestrator.md](references/connect-ops-review-orchestrator.md) — that file is the **canonical source** for discovery, classification, and pillar routing; do not restate its criteria table here (keeping a single copy avoids drift).
+Classify each discovered instance as **Production**, **Dev/Test**, or **Abandoned** — before classifying or answering any question about classification, read the criteria table and pillar routing in [connect-ops-review-orchestrator.md](references/connect-ops-review-orchestrator.md). **Production instances always add Pillar 3 (Reliability) and Pillar 4 (Performance) — state this whenever you describe classification.** — that file is the **canonical source** for discovery, classification, and pillar routing; do not restate its criteria table here (keeping a single copy avoids drift).
 
 **Classification is a heuristic signal based only on tags, alias, and integrations found — not an authoritative production/dev-test determination.** An instance with no tags or an ambiguous alias MUST be treated as unconfirmed/production-risk, not automatically "safe".
 
@@ -329,7 +329,8 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - CCP (Contact Control Panel) requires WebRTC — outbound UDP port 3478 (SEND/RECEIVE) for media/TURN, plus TCP 443 for signalling/HTTPS, with `*.connect.aws`/`*.transport.connect.aws` domains allow-listed. Media flows over UDP 3478; there is no documented TCP 443 media/TURN fallback. Corporate firewalls, VPN split-tunneling, and SSL inspection commonly break CCP connectivity.
 - Phone numbers are region-specific — a number claimed in one region cannot be used by an instance in another region.
 - Region availability differs per feature, per phone-number country/type, and per outbound campaign destination. Never answer "is X available in Region Y" from memory — the Region Readiness mode ([region-readiness.md](references/region-readiness.md)) fetches the decisive live AWS page by default (falling back to the bundled snapshot when web access is unavailable) and cites the source and date it used.
-- Outbound campaign destinations are fixed by the instance's home Region (e.g. no campaign calls from Europe (London) to US numbers), and Global Resiliency replicas exist only for three Region pairings (`us-east-1`↔`us-west-2`, `eu-central-1`↔`eu-west-2`, `ap-northeast-1`→`ap-northeast-3`).
+- Outbound campaign destinations are fixed by the instance's home Region (e.g. no campaign calls from Europe (London) to US numbers — `REG-007`).
+- Global Resiliency replicas exist only for three Region pairs (`REG-008`). Before answering any Global Resiliency question, load [region-readiness.md](references/region-readiness.md) and quote its Global Resiliency rule in full: the three pairs, the one-way Tokyo → Osaka pairing (Osaka is replica-only), and the prerequisites.
 - Contact records (formerly "contact trace records"/CTRs) are delivered at least once and may be delivered again when new information arrives (e.g. after update-contact-attributes); there is no documented fixed 24-hour delivery window. Each record is available for 24 months from contact initiation. Use Kinesis streaming for near-real-time delivery.
 - `wisdom:*` (Q in Connect, AI Agents, AI Guardrails, AI Prompts) is a completely separate IAM namespace from `connect:*`. The `connect:*` wildcard grants zero `wisdom:` access.
 - ACGR (Amazon Connect Global Resiliency) requires SAML identity management — it cannot be enabled on `CONNECT_MANAGED` instances.
@@ -344,10 +345,7 @@ All of the above are read-only calls. Mutating calls (`update-*`, `create-*`, `d
 - Use `Data unavailable — [reason]` for anything that couldn't be retrieved — never guess.
 - Never extrapolate a finding confirmed on one resource to all similar resources unless each was individually checked.
 - Never use phrases like "typically", "usually", "by default" in a finding — these signal training-data inference, not live verification.
-- Lambda timeout from a contact flow is configurable up to 8 seconds (Synchronous) or 60 seconds (Asynchronous) — do not claim a single fixed 8-second limit or that it cannot be changed.
-- Contact flow logs require enablement at BOTH instance and flow level — never claim instance-level alone is sufficient.
-- DTMF is only captured in "Get customer input" blocks — never claim other blocks capture DTMF.
-- Contact records are delivered at least once (and may be re-delivered) and retained for 24 months — do not claim a fixed 24-hour delivery window; recommend Kinesis streaming for near-real-time needs.
+- Never contradict a fact in the Gotchas section above (Lambda timeouts, flow-logging enablement, DTMF capture, contact-record delivery) — those statements are authoritative.
 - Never report call quality status as confirmed without an explicit customer answer to the D0 ask — an absence of a reported symptom is not the same as a confirmed "no issues."
 - Never produce a Findings section (Step 4.4) without a corresponding Troubleshooting Guide entry (Step 4.5) for every finding — an ops review is not complete until every finding has been cross-referenced to a runbook and diagnosed/verified.
 - Spend no more than a couple of minutes on any single hypothesis before pivoting if inconclusive.
